@@ -55,6 +55,7 @@ COLORS = [
 IMAGE_TYPES = ["photo", "illustration", "vector"]
 ORIENTATIONS = ["all", "horizontal", "vertical"]
 PER_PAGE_OPTIONS = [20, 30, 50]
+LANG_OPTIONS = ["tr", "en"]
 
 SHOWCASE_IMAGES = [
     {"title": "Nature", "url": "https://picsum.photos/id/1018/900/560"},
@@ -68,9 +69,17 @@ SHOWCASE_IMAGES = [
 ]
 
 
-def inject_custom_css() -> None:
-    st.markdown(
-        """
+def inject_custom_css(theme_mode: str) -> None:
+    is_dark = theme_mode == "dark"
+    bg_primary = "#0b1220" if is_dark else "#f3f6fb"
+    text_primary = "#e8eefc" if is_dark else "#15253f"
+    text_muted = "#afbdd3" if is_dark else "#5a6881"
+    card_bg = "#111c33" if is_dark else "#ffffff"
+    card_border = "#23304e" if is_dark else "#d9e2ef"
+    input_bg = "#0b1a33" if is_dark else "#102f5d"
+    card_stat_bg = "#0d172b" if is_dark else "#f6f9ff"
+
+    css = """
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
 
@@ -79,8 +88,9 @@ def inject_custom_css() -> None:
         .stApp {
           background:
             radial-gradient(1100px 420px at 10% 0%, #d9fff2 0%, rgba(217,255,242,0) 48%),
-            radial-gradient(900px 360px at 100% 0%, #ddebff 0%, rgba(221,235,255,0) 46%),
-            #f3f6fb;
+            radial-gradient(900px 360px at 100% 0%, rgba(221,235,255,0.35) 0%, rgba(221,235,255,0) 46%),
+            __BG_PRIMARY__;
+          color: __TEXT_PRIMARY__;
         }
 
         [data-testid="stSidebar"] { display: none; }
@@ -102,7 +112,7 @@ def inject_custom_css() -> None:
 
         .hero p {
           margin: 8px 0 0;
-          opacity: 0.92;
+          color: #e8f2ff !important;
           font-size: 1.05rem;
         }
 
@@ -119,9 +129,72 @@ def inject_custom_css() -> None:
         .section-title {
           margin: 6px 0 10px;
           font-weight: 800;
-          color: #13233a;
+          color: __TEXT_PRIMARY__;
           font-size: 0.95rem;
           letter-spacing: 0.2px;
+        }
+
+        [data-testid="stCaptionContainer"] p,
+        .stCaption,
+        .stMarkdown p,
+        .stMarkdown label,
+        [data-testid="stMetricLabel"] p,
+        [data-testid="stMetricValue"] {
+          color: __TEXT_PRIMARY__ !important;
+        }
+
+        [data-testid="stTextInput"] input,
+        [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+        [data-testid="stNumberInput"] input {
+          background: __INPUT_BG__ !important;
+          color: #f6f9ff !important;
+          border: 1px solid #1f4f8f !important;
+          border-radius: 10px !important;
+        }
+
+        [data-testid="stExpander"] [data-baseweb="select"] span,
+        [data-testid="stExpander"] [data-baseweb="select"] div,
+        [data-testid="stExpander"] label {
+          color: #e6eeff !important;
+        }
+
+        [data-testid="stVerticalBlockBorderWrapper"] {
+          background: __CARD_BG__;
+          border-color: __CARD_BORDER__ !important;
+        }
+
+        .card-label {
+          color: __TEXT_PRIMARY__;
+          font-size: 1rem;
+          font-weight: 700;
+          margin-top: 8px;
+        }
+        .card-value {
+          color: __TEXT_MUTED__;
+          font-size: 0.98rem;
+          margin-bottom: 4px;
+        }
+        .card-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          margin-top: 10px;
+          margin-bottom: 8px;
+        }
+        .card-stat-box {
+          border: 1px solid __CARD_BORDER__;
+          border-radius: 10px;
+          padding: 8px;
+          background: __CARD_STAT_BG__;
+        }
+        .card-stat-title {
+          color: __TEXT_MUTED__;
+          font-size: 0.8rem;
+        }
+        .card-stat-value {
+          color: __TEXT_PRIMARY__;
+          font-size: 1.2rem;
+          font-weight: 800;
         }
 
         .stButton > button,
@@ -160,9 +233,19 @@ def inject_custom_css() -> None:
           color: #dce7ff;
         }
         </style>
-        """,
-        unsafe_allow_html=True,
+    """
+
+    css = (
+        css.replace("__BG_PRIMARY__", bg_primary)
+        .replace("__TEXT_PRIMARY__", text_primary)
+        .replace("__TEXT_MUTED__", text_muted)
+        .replace("__CARD_BG__", card_bg)
+        .replace("__CARD_BORDER__", card_border)
+        .replace("__INPUT_BG__", input_bg)
+        .replace("__CARD_STAT_BG__", card_stat_bg)
     )
+
+    st.markdown(css, unsafe_allow_html=True)
 
 
 def safe_rerun() -> None:
@@ -192,6 +275,8 @@ def init_state() -> None:
         "search_active": False,
         "search_query": "",
         "search_query_input": "",
+        "search_lang": "tr",
+        "theme_mode": "light",
         "image_type": "photo",
         "category": "all",
         "orientation": "all",
@@ -201,6 +286,7 @@ def init_state() -> None:
         "show_adult": False,
         "page": 1,
         "_clear_search_input": False,
+        "_request_reset": False,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -222,6 +308,10 @@ def reset_all() -> None:
     st.session_state.search_active = False
     st.session_state._clear_search_input = True
     reset_filters()
+
+
+def toggle_theme() -> None:
+    st.session_state.theme_mode = "dark" if st.session_state.theme_mode == "light" else "light"
 
 
 def slugify_tags(tags: str) -> str:
@@ -246,6 +336,7 @@ def get_download_dir() -> Path:
 
 def build_params(
     query: str,
+    lang: str,
     image_type: str,
     category: str,
     orientation: str,
@@ -257,6 +348,7 @@ def build_params(
     params: Dict[str, Any] = {
         "key": get_pixabay_api_key(),
         "q": query,
+        "lang": lang,
         "image_type": image_type,
         "safesearch": str(safesearch).lower(),
         "page": page,
@@ -276,6 +368,7 @@ def build_params(
 @st.cache_data(show_spinner=False, ttl=300)
 def search_pixabay(
     query: str,
+    lang: str,
     image_type: str,
     category: str,
     orientation: str,
@@ -286,6 +379,7 @@ def search_pixabay(
 ) -> Dict[str, Any]:
     params = build_params(
         query=query,
+        lang=lang,
         image_type=image_type,
         category=category,
         orientation=orientation,
@@ -355,6 +449,22 @@ def render_hero() -> None:
     )
 
 
+def render_top_controls() -> None:
+    c1, c2, c3 = st.columns([6, 2, 2])
+    with c2:
+        st.selectbox(
+            "Dil",
+            options=LANG_OPTIONS,
+            key="search_lang",
+            format_func=lambda x: "Türkçe" if x == "tr" else "English",
+        )
+    with c3:
+        label = "🌙 Koyu Tema" if st.session_state.theme_mode == "light" else "☀️ Açık Tema"
+        if st.button(label, key="theme_toggle_btn", use_container_width=True):
+            toggle_theme()
+            safe_rerun()
+
+
 def run_search(reset_page: bool) -> None:
     query = st.session_state.search_query_input.strip()
     if not query:
@@ -370,6 +480,10 @@ def run_search(reset_page: bool) -> None:
 
 def render_search_section() -> None:
     st.subheader("Arama")
+
+    if st.session_state._request_reset:
+        reset_all()
+        st.session_state._request_reset = False
 
     if st.session_state._clear_search_input:
         st.session_state.search_query_input = ""
@@ -428,7 +542,7 @@ def render_search_section() -> None:
                 run_search(reset_page=True)
         with action_cols[1]:
             if st.button("Sıfırla", use_container_width=True):
-                reset_all()
+                st.session_state._request_reset = True
                 safe_rerun()
         with action_cols[2]:
             if st.button("Yenile", use_container_width=True):
@@ -507,13 +621,21 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         else:
             st.info("Önizleme görseli yok.")
 
-        st.markdown(f"**Etiketler:** {tags}")
-        st.markdown(f"**Kullanıcı:** {user}")
+        st.markdown("<div class='card-label'>Etiketler</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='card-value'>{tags}</div>", unsafe_allow_html=True)
+        st.markdown("<div class='card-label'>Kullanıcı</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='card-value'>{user}</div>", unsafe_allow_html=True)
 
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Beğeni", likes)
-        m2.metric("Görüntülenme", views)
-        m3.metric("İndirme", downloads)
+        st.markdown(
+            f"""
+            <div class="card-stats">
+              <div class="card-stat-box"><div class="card-stat-title">Beğeni</div><div class="card-stat-value">{likes}</div></div>
+              <div class="card-stat-box"><div class="card-stat-title">Görüntülenme</div><div class="card-stat-value">{views}</div></div>
+              <div class="card-stat-box"><div class="card-stat-title">İndirme</div><div class="card-stat-value">{downloads}</div></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.caption(f"Çözünürlük: {width} x {height}")
 
         a1, a2 = st.columns(2)
@@ -554,8 +676,9 @@ def main() -> None:
     )
 
     init_state()
-    inject_custom_css()
+    inject_custom_css(st.session_state.theme_mode)
 
+    render_top_controls()
     render_hero()
     render_search_section()
 
@@ -567,6 +690,7 @@ def main() -> None:
         try:
             data = search_pixabay(
                 query=st.session_state.search_query,
+                lang=st.session_state.search_lang,
                 image_type=st.session_state.image_type,
                 category=st.session_state.category,
                 orientation=st.session_state.orientation,
