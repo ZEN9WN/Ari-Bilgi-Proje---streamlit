@@ -108,13 +108,14 @@ I18N: Dict[str, Dict[str, str]] = {
         "views": "Görüntülenme",
         "downloads": "İndirme",
         "resolution": "Çözünürlük",
-        "open_image": "Görseli Aç",
+        "fullscreen_open": "Tam Ekran Aç",
         "save_device": "Cihaza Kaydet",
         "search_empty": "Lütfen arama kelimesi girin.",
         "loading": "Pixabay sonuçları getiriliyor...",
         "no_results": "Sonuç bulunamadı. Farklı kelime veya filtre deneyin.",
         "results_title": "Sonuçlar",
         "saved_prefix": "Kaydedildi",
+        "back_top": "⬆ Üste Dön",
     },
     "en": {
         "hero_title": "Pixabay Visual Search",
@@ -155,13 +156,14 @@ I18N: Dict[str, Dict[str, str]] = {
         "views": "Views",
         "downloads": "Downloads",
         "resolution": "Resolution",
-        "open_image": "Open Image",
+        "fullscreen_open": "Open Fullscreen",
         "save_device": "Save to Device",
         "search_empty": "Please enter a search term.",
         "loading": "Fetching results from Pixabay...",
         "no_results": "No results found. Try another keyword or filter.",
         "results_title": "Results",
         "saved_prefix": "Saved",
+        "back_top": "⬆ Back to Top",
     },
 }
 
@@ -267,6 +269,11 @@ def inject_custom_css(theme_mode: str) -> None:
         [data-testid="stHeadingWithActionElements"] a {
           display: none !important;
         }
+        [data-testid="StyledFullScreenButton"],
+        button[title="View fullscreen"],
+        button[title="Tam ekran görüntüle"] {
+          display: none !important;
+        }
 
         .hero {
           background: linear-gradient(120deg, #0f766e 0%, #155e75 52%, #1d4d8f 100%);
@@ -305,6 +312,24 @@ def inject_custom_css(theme_mode: str) -> None:
           color: __TEXT_PRIMARY__;
           font-size: 0.95rem;
           letter-spacing: 0.2px;
+        }
+        .top-control-label {
+          color: __TEXT_PRIMARY__;
+          font-size: 0.86rem;
+          font-weight: 700;
+          margin-bottom: 4px;
+          line-height: 1.1;
+        }
+        .scroll-top-link {
+          display: inline-block;
+          margin-top: 12px;
+          padding: 8px 14px;
+          border-radius: 10px;
+          border: 1px solid __CARD_BORDER__;
+          color: __TEXT_PRIMARY__ !important;
+          background: __CARD_BG__;
+          text-decoration: none;
+          font-weight: 700;
         }
 
         [data-testid="stCaptionContainer"] p,
@@ -464,7 +489,7 @@ def init_state() -> None:
         "search_query_input": "",
         "search_lang": "tr",
         "search_lang_select": "tr",
-        "theme_mode": "light",
+        "theme_mode": "dark",
         "image_type": "photo",
         "category": "all",
         "orientation": "all",
@@ -640,17 +665,19 @@ def render_hero() -> None:
 def render_top_controls() -> None:
     c1, c2, c3 = st.columns([6, 2, 2])
     with c2:
+        st.markdown(f"<div class='top-control-label'>{t('language')}</div>", unsafe_allow_html=True)
         selected_lang = st.selectbox(
-            t("language"),
+            "Language",
             options=LANG_OPTIONS,
             key="search_lang_select",
             format_func=lambda x: "Türkçe" if x == "tr" else "English",
+            label_visibility="collapsed",
         )
         if selected_lang != st.session_state.search_lang:
             st.session_state.search_lang = selected_lang
             safe_rerun()
     with c3:
-        st.markdown(f"**{t('theme')}**")
+        st.markdown(f"<div class='top-control-label'>{t('theme')}</div>", unsafe_allow_html=True)
         label = t("theme_dark") if st.session_state.theme_mode == "light" else t("theme_light")
         if st.button(label, key="theme_toggle_btn", use_container_width=True):
             toggle_theme()
@@ -770,6 +797,9 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
 
 def render_pagination(total_hits: int, key_prefix: str) -> None:
     total_pages = max(1, min(math.ceil(total_hits / st.session_state.per_page), 500))
+    page_key = f"{key_prefix}_page"
+    if st.session_state.get(page_key) != st.session_state.page:
+        st.session_state[page_key] = st.session_state.page
 
     p1, p2, p3 = st.columns([1, 1.2, 1])
     with p1:
@@ -779,7 +809,7 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
     with p2:
         selected_page = st.number_input(
             t("page"),
-            key=f"{key_prefix}_page",
+            key=page_key,
             min_value=1,
             max_value=total_pages,
             value=st.session_state.page,
@@ -836,11 +866,11 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         with a1:
             if image_url:
                 if hasattr(st, "link_button"):
-                    st.link_button(t("open_image"), url=image_url, use_container_width=True)
+                    st.link_button(t("fullscreen_open"), url=image_url, use_container_width=True)
                 else:
-                    st.markdown(f"[{t('open_image')}]({image_url})")
+                    st.markdown(f"[{t('fullscreen_open')}]({image_url})")
             else:
-                st.button(t("open_image"), disabled=True, use_container_width=True)
+                st.button(t("fullscreen_open"), disabled=True, use_container_width=True)
 
         with a2:
             if image_url:
@@ -879,6 +909,7 @@ def main() -> None:
     init_state()
     inject_custom_css(st.session_state.theme_mode)
 
+    st.markdown("<a id='top'></a>", unsafe_allow_html=True)
     render_top_controls()
     render_hero()
     render_search_section()
@@ -918,6 +949,7 @@ def main() -> None:
     st.markdown(f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True)
     render_summary(total_hits=total_hits, hits=hits)
     render_pagination(total_hits, key_prefix="bottom")
+    st.markdown(f"<a class='scroll-top-link' href='#top'>{t('back_top')}</a>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
