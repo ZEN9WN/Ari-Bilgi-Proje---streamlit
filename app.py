@@ -191,6 +191,7 @@ def init_state() -> None:
     defaults = {
         "search_active": False,
         "search_query": "",
+        "search_query_input": "",
         "image_type": "photo",
         "category": "all",
         "orientation": "all",
@@ -199,6 +200,7 @@ def init_state() -> None:
         "columns": 3,
         "show_adult": False,
         "page": 1,
+        "_clear_search_input": False,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -218,6 +220,7 @@ def reset_all() -> None:
     st.session_state.search_query = ""
     st.session_state.page = 1
     st.session_state.search_active = False
+    st.session_state._clear_search_input = True
     reset_filters()
 
 
@@ -353,7 +356,7 @@ def render_hero() -> None:
 
 
 def run_search(reset_page: bool) -> None:
-    query = st.session_state.search_query.strip()
+    query = st.session_state.search_query_input.strip()
     if not query:
         st.warning("Lütfen arama kelimesi girin.")
         st.session_state.search_active = False
@@ -367,11 +370,16 @@ def run_search(reset_page: bool) -> None:
 
 def render_search_section() -> None:
     st.subheader("Arama")
+
+    if st.session_state._clear_search_input:
+        st.session_state.search_query_input = ""
+        st.session_state._clear_search_input = False
+
     q_col, b_col = st.columns([7, 1.6])
     with q_col:
         st.text_input(
             "Görsel arama",
-            key="search_query",
+            key="search_query_input",
             placeholder="Pixabay'da görsel ara (ör: istanbul, cat, pubg)",
             label_visibility="collapsed",
         )
