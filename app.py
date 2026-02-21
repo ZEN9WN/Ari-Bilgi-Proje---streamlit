@@ -53,77 +53,79 @@ COLORS = [
 ]
 IMAGE_TYPES = ["photo", "illustration", "vector"]
 PER_PAGE_OPTIONS = [20, 30, 50]
+QUICK_SEARCHES = ["istanbul", "cat", "nature", "pubg", "sports", "business"]
 
 
 def inject_custom_css() -> None:
     st.markdown(
         """
         <style>
-        :root {
-          --bg-soft: #f7f6f2;
-          --card: #ffffff;
-          --ink: #112233;
-          --muted: #5b6775;
-          --primary: #0f766e;
-          --accent: #f59e0b;
-          --line: #d9dee7;
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+
+        * {
+          font-family: 'Manrope', sans-serif;
         }
 
         .stApp {
           background:
-            radial-gradient(1200px 500px at 0% 0%, #d9f7ef 0%, transparent 45%),
-            radial-gradient(800px 400px at 100% 0%, #fdecc8 0%, transparent 45%),
-            var(--bg-soft);
+            radial-gradient(1100px 420px at 10% 0%, #d9fff2 0%, rgba(217,255,242,0) 48%),
+            radial-gradient(900px 360px at 100% 0%, #ddebff 0%, rgba(221,235,255,0) 46%),
+            #f6f8fb;
         }
 
-        .hero {
+        [data-testid="stSidebar"] {
+          display: none;
+        }
+
+        .top-hero {
           background: linear-gradient(120deg, #0f766e 0%, #155e75 52%, #1d4d8f 100%);
           color: white;
-          border-radius: 16px;
-          padding: 20px 22px;
-          margin-bottom: 16px;
-          box-shadow: 0 10px 28px rgba(16, 42, 67, 0.18);
+          border-radius: 18px;
+          padding: 18px 22px;
+          margin-bottom: 14px;
+          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
         }
 
-        .hero h2 {
-          margin: 0 0 6px 0;
-          font-size: 1.6rem;
+        .top-hero h1 {
+          margin: 0;
+          font-size: 1.9rem;
+          font-weight: 800;
           letter-spacing: 0.2px;
         }
 
-        .hero p {
-          margin: 0;
+        .top-hero p {
+          margin: 7px 0 0;
           opacity: 0.92;
-          font-size: 0.95rem;
         }
 
-        .meta-chip {
-          display: inline-block;
+        .glass-card {
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid #e0e7ef;
+          border-radius: 16px;
+          padding: 14px;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .quick-title {
+          font-size: 0.9rem;
+          color: #445066;
+          margin: 6px 0 10px;
+          font-weight: 700;
+        }
+
+        .result-head {
           margin-top: 10px;
-          margin-right: 8px;
-          padding: 4px 10px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.16);
-          font-size: 0.8rem;
+          margin-bottom: 8px;
         }
 
-        .result-card {
-          background: var(--card);
-          border: 1px solid var(--line);
-          border-radius: 14px;
-          padding: 12px;
-          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-        }
-
-        .kpi {
-          font-size: 0.82rem;
-          color: var(--muted);
+        .kpi-note {
+          color: #5b6775;
+          font-size: 0.85rem;
           margin-top: 6px;
         }
 
         .stButton > button, .stDownloadButton > button {
           border-radius: 10px;
-          border: 1px solid #c8d0db;
         }
         </style>
         """,
@@ -160,8 +162,7 @@ def get_download_dir() -> Path:
             return candidate
         except OSError:
             continue
-
-    raise RuntimeError("İndirme klasörü oluşturulamadı. Yazma izinleri kontrol edilmeli.")
+    raise RuntimeError("İndirme klasörü oluşturulamadı. Yazma izinlerini kontrol edin.")
 
 
 def slugify_tags(tags: str) -> str:
@@ -237,6 +238,36 @@ def search_pixabay(
     return payload
 
 
+@st.cache_data(show_spinner=False, ttl=1800)
+def get_showcase_images() -> List[Dict[str, Any]]:
+    all_hits: List[Dict[str, Any]] = []
+    seen_ids = set()
+    for q in ["nature", "travel", "technology", "animals"]:
+        try:
+            data = search_pixabay(
+                query=q,
+                category="all",
+                color="all",
+                safesearch=True,
+                page=1,
+                per_page=12,
+                image_type="photo",
+            )
+        except RuntimeError:
+            continue
+
+        for hit in data.get("hits", []):
+            image_id = hit.get("id")
+            if image_id in seen_ids:
+                continue
+            seen_ids.add(image_id)
+            all_hits.append(hit)
+            if len(all_hits) >= 12:
+                return all_hits
+
+    return all_hits
+
+
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_image_bytes(image_url: str) -> bytes:
     try:
@@ -301,80 +332,129 @@ def reset_state() -> None:
     init_state()
 
 
-def render_hero() -> None:
+def apply_quick_search(query: str) -> None:
+    st.session_state.search_query = query
+    st.session_state.page = 1
+    st.session_state.search_active = True
+    clear_prepared_downloads()
+    safe_rerun()
+
+
+def render_top_hero() -> None:
     st.markdown(
         """
-        <div class="hero">
-            <h2>Pixabay Görsel Arama</h2>
-            <p>Arama yap, filtrele, kartları incele ve tek tıkla indir.</p>
-            <span class="meta-chip">Cache aktif</span>
-            <span class="meta-chip">Cloud uyumlu</span>
-            <span class="meta-chip">Sayfalama destekli</span>
+        <div class="top-hero">
+            <h1>Pixabay Visual Search</h1>
+            <p>Google tarzı hızlı arama + Pixabay filtreleri + tek tık indirme.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_sidebar() -> None:
-    with st.sidebar:
-        st.subheader("Arama ve Filtreler")
-        with st.form("search_form", clear_on_submit=False):
-            query = st.text_input(
-                "Görsel arama",
-                value=st.session_state.search_query,
-                placeholder="cat, istanbul, pubg...",
-            )
-            image_type = st.selectbox("Görsel tipi", IMAGE_TYPES, index=IMAGE_TYPES.index(st.session_state.image_type))
-            category = st.selectbox(
-                "Kategori",
-                options=CATEGORIES,
-                index=CATEGORIES.index(st.session_state.category),
-                format_func=lambda x: "Hepsi" if x == "all" else x,
-            )
-            color = st.selectbox(
-                "Renk",
-                options=COLORS,
-                index=COLORS.index(st.session_state.color),
-                format_func=lambda x: "Hepsi" if x == "all" else x,
-            )
-            per_page = st.selectbox(
-                "Sayfa başına sonuç",
-                PER_PAGE_OPTIONS,
-                index=PER_PAGE_OPTIONS.index(st.session_state.per_page),
-            )
-            columns = st.slider("Grid kolon", min_value=2, max_value=4, value=st.session_state.columns, step=1)
-            show_adult = st.toggle("Adult içerikleri göster", value=not st.session_state.safesearch)
-
-            left, right = st.columns(2)
-            with left:
+def render_search_panel() -> None:
+    with st.container(border=True):
+        with st.form("top_search_form", clear_on_submit=False):
+            q_col, b_col = st.columns([7, 1.2])
+            with q_col:
+                query = st.text_input(
+                    "Görsel arama",
+                    value=st.session_state.search_query,
+                    placeholder="Pixabay'da görsel ara (ör: istanbul, cat, pubg)",
+                    label_visibility="collapsed",
+                )
+            with b_col:
                 search_clicked = st.form_submit_button("Ara", use_container_width=True)
-            with right:
-                reset_clicked = st.form_submit_button("Sıfırla", use_container_width=True)
 
-        if reset_clicked:
-            reset_state()
-            safe_rerun()
+            st.markdown("<div class='quick-title'>Filtreler</div>", unsafe_allow_html=True)
+            f1, f2, f3, f4 = st.columns(4)
+            with f1:
+                image_type = st.selectbox(
+                    "Görsel tipi",
+                    IMAGE_TYPES,
+                    index=IMAGE_TYPES.index(st.session_state.image_type),
+                )
+            with f2:
+                category = st.selectbox(
+                    "Kategori",
+                    options=CATEGORIES,
+                    index=CATEGORIES.index(st.session_state.category),
+                    format_func=lambda x: "Hepsi" if x == "all" else x,
+                )
+            with f3:
+                color = st.selectbox(
+                    "Renk",
+                    options=COLORS,
+                    index=COLORS.index(st.session_state.color),
+                    format_func=lambda x: "Hepsi" if x == "all" else x,
+                )
+            with f4:
+                per_page = st.selectbox(
+                    "Sayfa başına sonuç",
+                    PER_PAGE_OPTIONS,
+                    index=PER_PAGE_OPTIONS.index(st.session_state.per_page),
+                )
 
-        if search_clicked:
-            cleaned = query.strip()
-            if not cleaned:
-                st.warning("Lütfen arama kelimesi girin.")
-                st.session_state.search_active = False
-                return
+            opt1, opt2 = st.columns(2)
+            with opt1:
+                columns = st.slider("Grid kolon", min_value=2, max_value=4, value=st.session_state.columns, step=1)
+            with opt2:
+                show_adult = st.toggle("Adult içerikleri göster", value=not st.session_state.safesearch)
 
-            st.session_state.search_query = cleaned
-            st.session_state.category = category
-            st.session_state.color = color
-            st.session_state.image_type = image_type
-            st.session_state.safesearch = not show_adult
-            st.session_state.per_page = per_page
-            st.session_state.columns = columns
-            st.session_state.page = 1
-            st.session_state.search_active = True
-            clear_prepared_downloads()
+            a1, a2 = st.columns([1, 1])
+            with a1:
+                reset_clicked = st.form_submit_button("Filtreleri sıfırla", use_container_width=True)
+            with a2:
+                keep_clicked = st.form_submit_button("Mevcut filtrelerle yenile", use_container_width=True)
 
-        st.caption("İpucu: Streamlit Cloud'da API key için Settings > Secrets kısmına PIXABAY_KEY ekleyin.")
+    if reset_clicked:
+        reset_state()
+        safe_rerun()
+
+    if search_clicked or keep_clicked:
+        cleaned = query.strip()
+        if not cleaned:
+            st.warning("Lütfen arama kelimesi girin.")
+            st.session_state.search_active = False
+            return
+
+        st.session_state.search_query = cleaned
+        st.session_state.category = category
+        st.session_state.color = color
+        st.session_state.image_type = image_type
+        st.session_state.safesearch = not show_adult
+        st.session_state.per_page = per_page
+        st.session_state.columns = columns
+        st.session_state.page = 1
+        st.session_state.search_active = True
+        clear_prepared_downloads()
+
+
+def render_quick_searches() -> None:
+    st.markdown("<div class='quick-title'>Hızlı Aramalar</div>", unsafe_allow_html=True)
+    cols = st.columns(len(QUICK_SEARCHES))
+    for i, term in enumerate(QUICK_SEARCHES):
+        with cols[i]:
+            if st.button(term.title(), key=f"quick_search_{term}", use_container_width=True):
+                apply_quick_search(term)
+
+
+def render_showcase() -> None:
+    st.markdown("### Örnek Görseller")
+    st.caption("Arama yapmadan önce ilham almak için örnek galeriyi görebilirsin.")
+
+    images = get_showcase_images()
+    if not images:
+        st.info("Örnek görseller yüklenemedi. İnternet bağlantısı veya API limiti kontrol edilmeli.")
+        return
+
+    cols = st.columns(4)
+    for i, item in enumerate(images[:12]):
+        with cols[i % 4]:
+            preview_url = item.get("webformatURL") or item.get("previewURL")
+            if preview_url:
+                st.image(preview_url, use_container_width=True)
+            st.caption(f"{item.get('tags', '-')}")
 
 
 def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
@@ -394,13 +474,9 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
 
     c1, c2, c3, c4 = st.columns([1, 1.4, 1.4, 1])
     with c1:
-        if st.button(
-            "◀ Önceki",
-            key=f"{key_prefix}_prev",
-            disabled=st.session_state.page <= 1,
-            use_container_width=True,
-        ):
+        if st.button("◀ Önceki", key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
             st.session_state.page -= 1
+            clear_prepared_downloads()
             safe_rerun()
     with c2:
         selected_page = st.number_input(
@@ -413,17 +489,14 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
         )
         if int(selected_page) != st.session_state.page:
             st.session_state.page = int(selected_page)
+            clear_prepared_downloads()
             safe_rerun()
     with c3:
-        st.markdown(f"<div class='kpi'>Toplam sayfa: <b>{total_pages}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='kpi-note'>Toplam sayfa: <b>{total_pages}</b></div>", unsafe_allow_html=True)
     with c4:
-        if st.button(
-            "Sonraki ▶",
-            key=f"{key_prefix}_next",
-            disabled=st.session_state.page >= total_pages,
-            use_container_width=True,
-        ):
+        if st.button("Sonraki ▶", key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
             st.session_state.page += 1
+            clear_prepared_downloads()
             safe_rerun()
 
 
@@ -444,24 +517,23 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         if preview_url:
             st.image(preview_url, use_container_width=True)
         else:
-            st.info("Önizleme görseli bulunamadı.")
+            st.info("Önizleme görseli yok.")
 
         st.markdown(f"**Etiketler:** {tags}")
         st.markdown(f"**Yükleyen:** {user}")
-
-        k1, k2, k3 = st.columns(3)
-        k1.metric("Beğeni", likes)
-        k2.metric("Görüntülenme", views)
-        k3.metric("İndirme", downloads)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Beğeni", likes)
+        m2.metric("Görüntülenme", views)
+        m3.metric("İndirme", downloads)
         st.caption(f"Çözünürlük: {width} x {height}")
 
         file_name = filename_for_item(image_id=image_id, tags=tags)
         prepare_key = f"{key_prefix}_prepared_{image_id}"
-        dl1, dl2 = st.columns(2)
 
-        with dl1:
+        d1, d2 = st.columns(2)
+        with d1:
             if image_url:
-                if st.button("İndirmeyi hazırla", key=f"{key_prefix}_prepare_btn_{image_id}", use_container_width=True):
+                if st.button("İndirmeyi hazırla", key=f"{key_prefix}_prepare_{image_id}", use_container_width=True):
                     try:
                         st.session_state[prepare_key] = fetch_image_bytes(image_url)
                     except RuntimeError as exc:
@@ -473,16 +545,16 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
                         data=st.session_state[prepare_key],
                         file_name=file_name,
                         mime="image/jpeg",
-                        key=f"{key_prefix}_download_btn_{image_id}",
+                        key=f"{key_prefix}_download_{image_id}",
                         use_container_width=True,
                     )
             else:
                 st.button("İndirmeyi hazırla", disabled=True, use_container_width=True)
 
-        with dl2:
-            if st.button("Sunucuya kaydet", key=f"{key_prefix}_save_btn_{image_id}", use_container_width=True):
+        with d2:
+            if st.button("Sunucuya kaydet", key=f"{key_prefix}_save_{image_id}", use_container_width=True):
                 if not image_url:
-                    st.error("Bu görsel için indirilebilir URL yok.")
+                    st.error("Bu görsel için indirilebilir URL bulunamadı.")
                 else:
                     try:
                         saved = save_image_locally(image_url=image_url, image_id=image_id, tags=tags)
@@ -503,16 +575,17 @@ def main() -> None:
         page_title="Pixabay Görsel Arama",
         page_icon="🖼️",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
     )
 
     init_state()
     inject_custom_css()
-    render_hero()
-    render_sidebar()
+    render_top_hero()
+    render_search_panel()
+    render_quick_searches()
 
     if not st.session_state.search_active:
-        st.info("Arama başlatmak için sol panelden bir kelime girip 'Ara' butonuna basın.")
+        render_showcase()
         return
 
     with st.spinner("Pixabay'dan sonuçlar getiriliyor..."):
@@ -535,6 +608,7 @@ def main() -> None:
 
     if total_hits == 0 or not hits:
         st.warning("Sonuç bulunamadı. Farklı bir kelime veya filtre deneyin.")
+        render_showcase()
         return
 
     render_summary(total_hits=total_hits, hits=hits)
