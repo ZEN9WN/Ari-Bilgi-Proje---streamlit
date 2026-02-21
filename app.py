@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import re
+import os
 from pathlib import Path
 from typing import Any, Dict
 
 import requests
 import streamlit as st
-from streamlit.errors import StreamlitSecretNotFoundError
 
 API_URL = "https://pixabay.com/api/"
 DEFAULT_API_KEY = "49738243-e25f3b714305e2a1c2cd97721"
@@ -52,10 +54,37 @@ PER_PAGE_OPTIONS = [20, 30, 50]
 
 
 def get_pixabay_api_key() -> str:
+    env_key = os.getenv("PIXABAY_KEY", "").strip()
+    if env_key:
+        return env_key
+
     try:
-        return st.secrets["PIXABAY_KEY"]
-    except (StreamlitSecretNotFoundError, KeyError):
-        return DEFAULT_API_KEY
+        secret_key = str(st.secrets["PIXABAY_KEY"]).strip()
+        if secret_key:
+            return secret_key
+    except Exception:
+        pass
+
+    return DEFAULT_API_KEY
+
+
+def safe_rerun() -> None:
+    if hasattr(st, "rerun"):
+        st.rerun()
+    else:
+        st.experimental_rerun()
+
+
+def get_download_dir() -> Path:
+    candidates = [Path("downloads"), Path("/tmp/downloads")]
+    for candidate in candidates:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            return candidate
+        except OSError:
+            continue
+
+    raise RuntimeError("İndirme klasörü oluşturulamadı. Yazma izni olan bir klasör bulunamadı.")
 
 
 @st.cache_data(show_spinner=False, ttl=300)
@@ -116,8 +145,7 @@ def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
     except requests.RequestException as exc:
         raise RuntimeError(f"Görsel indirilemedi: {exc}") from exc
 
-    download_dir = Path("downloads")
-    download_dir.mkdir(exist_ok=True)
+    download_dir = get_download_dir()
 
     slug = slugify_tags(tags)
     base = download_dir / f"pixabay_{image_id}_{slug}.jpg"
@@ -183,7 +211,7 @@ def render_search_form() -> None:
 
     if reset_clicked:
         reset_state()
-        st.rerun()
+        safe_rerun()
 
     if submitted:
         cleaned = query.strip()
@@ -208,7 +236,7 @@ def render_pagination(total_hits: int) -> None:
     with pager_col1:
         if st.button("Önceki", disabled=st.session_state.page <= 1):
             st.session_state.page -= 1
-            st.rerun()
+            safe_rerun()
     with pager_col2:
         selected_page = st.number_input(
             "Sayfa",
@@ -219,11 +247,11 @@ def render_pagination(total_hits: int) -> None:
         )
         if selected_page != st.session_state.page:
             st.session_state.page = int(selected_page)
-            st.rerun()
+            safe_rerun()
     with pager_col3:
         if st.button("Sonraki", disabled=st.session_state.page >= total_pages):
             st.session_state.page += 1
-            st.rerun()
+            safe_rerun()
 
     st.caption(f"Toplam sonuç: {total_hits} | Toplam sayfa: {total_pages}")
 
