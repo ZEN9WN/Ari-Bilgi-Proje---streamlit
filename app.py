@@ -58,16 +58,6 @@ COLORS = [
 IMAGE_TYPES = ["photo", "illustration", "vector"]
 PER_PAGE_OPTIONS = [20, 30, 50]
 QUICK_SEARCHES = ["istanbul", "cat", "nature", "pubg", "sports", "business"]
-SHOWCASE_IMAGES = [
-    {"title": "Nature", "url": "https://picsum.photos/id/1018/900/560"},
-    {"title": "Travel", "url": "https://picsum.photos/id/1015/900/560"},
-    {"title": "City", "url": "https://picsum.photos/id/1043/900/560"},
-    {"title": "People", "url": "https://picsum.photos/id/1005/900/560"},
-    {"title": "Animals", "url": "https://picsum.photos/id/1024/900/560"},
-    {"title": "Technology", "url": "https://picsum.photos/id/180/900/560"},
-    {"title": "Food", "url": "https://picsum.photos/id/292/900/560"},
-    {"title": "Sports", "url": "https://picsum.photos/id/1059/900/560"},
-]
 
 
 def inject_custom_css() -> None:
@@ -242,23 +232,48 @@ def search_pixabay(
     except requests.RequestException as exc:
         raise RuntimeError(f"API bağlantı hatası: {exc}") from exc
 
+    if response.status_code != 200:
+        raise RuntimeError(f"Pixabay API HTTP hatası: {response.status_code}")
+
     try:
         payload = response.json()
     except ValueError as exc:
         raise RuntimeError("API yanıtı JSON formatında değil.") from exc
 
-    if response.status_code != 200:
-        api_error = payload.get("error", "") if isinstance(payload, dict) else ""
-        if response.status_code == 429:
-            raise RuntimeError("Pixabay API limitine ulaşıldı (HTTP 429). Bir süre sonra tekrar deneyin.")
-        if response.status_code == 400 and api_error:
-            raise RuntimeError(f"Pixabay API hatası (HTTP 400): {api_error}")
-        raise RuntimeError(f"Pixabay API HTTP hatası: {response.status_code}")
-
     if "hits" not in payload:
         raise RuntimeError("API yanıtında 'hits' alanı yok.")
 
     return payload
+
+
+@st.cache_data(show_spinner=False, ttl=1800)
+def get_showcase_images() -> List[Dict[str, Any]]:
+    all_hits: List[Dict[str, Any]] = []
+    seen_ids = set()
+    for q in ["nature", "travel", "technology", "animals"]:
+        try:
+            data = search_pixabay(
+                query=q,
+                category="all",
+                color="all",
+                safesearch=True,
+                page=1,
+                per_page=12,
+                image_type="photo",
+            )
+        except RuntimeError:
+            continue
+
+        for hit in data.get("hits", []):
+            image_id = hit.get("id")
+            if image_id in seen_ids:
+                continue
+            seen_ids.add(image_id)
+            all_hits.append(hit)
+            if len(all_hits) >= 12:
+                return all_hits
+
+    return all_hits
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
@@ -432,11 +447,18 @@ def render_showcase() -> None:
             st.session_state.search_active = True
 >>>>>>> theirs
 
+    images = get_showcase_images()
+    if not images:
+        st.info("Örnek görseller yüklenemedi. İnternet bağlantısı veya API limiti kontrol edilmeli.")
+        return
+
     cols = st.columns(4)
-    for i, item in enumerate(SHOWCASE_IMAGES):
+    for i, item in enumerate(images[:12]):
         with cols[i % 4]:
-            st.image(item["url"], use_container_width=True)
-            st.caption(item["title"])
+            preview_url = item.get("webformatURL") or item.get("previewURL")
+            if preview_url:
+                st.image(preview_url, use_container_width=True)
+            st.caption(f"{item.get('tags', '-')}")
 
 
 def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
