@@ -68,16 +68,183 @@ SHOWCASE_IMAGES = [
     {"title": "Sports", "url": "https://picsum.photos/id/1059/900/560"},
 ]
 
+I18N: Dict[str, Dict[str, str]] = {
+    "tr": {
+        "hero_title": "Pixabay Görsel Arama",
+        "hero_subtitle": "Google tarzı hızlı arama + Pixabay filtreleri + tek tık indirme.",
+        "language": "Dil",
+        "theme_dark": "🌙 Koyu Tema",
+        "theme_light": "☀️ Açık Tema",
+        "search_header": "Arama",
+        "search_input": "Görsel arama",
+        "search_placeholder": "Pixabay'da görsel ara (ör: istanbul, kedi, pubg)",
+        "search_btn": "Ara",
+        "filters": "Filtreler",
+        "image_type": "Görsel Türü",
+        "category": "Kategori",
+        "orientation": "Yatay/Dikey",
+        "per_page": "Sonuç Sayısı",
+        "color": "Renk",
+        "columns": "Grid Kolon",
+        "adult": "Adult içerikleri göster",
+        "apply": "Filtreyi Uygula",
+        "reset": "Sıfırla",
+        "refresh": "Yenile",
+        "showcase_title": "Örnek Görseller",
+        "showcase_caption": "Arama yapmadan önce örnek kartları görüntüleyebilirsin.",
+        "total_results": "Toplam Sonuç",
+        "page_likes": "Bu Sayfada Beğeni",
+        "page_views": "Bu Sayfada Görüntülenme",
+        "page_downloads": "Bu Sayfada İndirme",
+        "prev": "◀ Önceki",
+        "next": "Sonraki ▶",
+        "page": "Sayfa",
+        "total_pages": "Toplam sayfa",
+        "preview_missing": "Önizleme görseli yok.",
+        "tags": "Etiketler",
+        "user": "Kullanıcı",
+        "likes": "Beğeni",
+        "views": "Görüntülenme",
+        "downloads": "İndirme",
+        "resolution": "Çözünürlük",
+        "open_image": "Görseli Aç",
+        "save_device": "Cihaza Kaydet",
+        "search_empty": "Lütfen arama kelimesi girin.",
+        "loading": "Pixabay sonuçları getiriliyor...",
+        "no_results": "Sonuç bulunamadı. Farklı kelime veya filtre deneyin.",
+        "results_title": "### Sonuçlar",
+        "saved_prefix": "Kaydedildi",
+    },
+    "en": {
+        "hero_title": "Pixabay Visual Search",
+        "hero_subtitle": "Google-style quick search + Pixabay filters + one-click download.",
+        "language": "Language",
+        "theme_dark": "🌙 Dark Theme",
+        "theme_light": "☀️ Light Theme",
+        "search_header": "Search",
+        "search_input": "Image search",
+        "search_placeholder": "Search on Pixabay (e.g. istanbul, cat, pubg)",
+        "search_btn": "Search",
+        "filters": "Filters",
+        "image_type": "Image Type",
+        "category": "Category",
+        "orientation": "Orientation",
+        "per_page": "Results Per Page",
+        "color": "Color",
+        "columns": "Grid Columns",
+        "adult": "Show adult content",
+        "apply": "Apply Filters",
+        "reset": "Reset",
+        "refresh": "Refresh",
+        "showcase_title": "Sample Images",
+        "showcase_caption": "Preview sample cards before searching.",
+        "total_results": "Total Results",
+        "page_likes": "Likes on This Page",
+        "page_views": "Views on This Page",
+        "page_downloads": "Downloads on This Page",
+        "prev": "◀ Previous",
+        "next": "Next ▶",
+        "page": "Page",
+        "total_pages": "Total pages",
+        "preview_missing": "No preview image.",
+        "tags": "Tags",
+        "user": "User",
+        "likes": "Likes",
+        "views": "Views",
+        "downloads": "Downloads",
+        "resolution": "Resolution",
+        "open_image": "Open Image",
+        "save_device": "Save to Device",
+        "search_empty": "Please enter a search term.",
+        "loading": "Fetching results from Pixabay...",
+        "no_results": "No results found. Try another keyword or filter.",
+        "results_title": "### Results",
+        "saved_prefix": "Saved",
+    },
+}
+
+OPTION_LABELS_TR: Dict[str, str] = {
+    "all": "Hepsi",
+    "photo": "Fotoğraf",
+    "illustration": "İllüstrasyon",
+    "vector": "Vektör",
+    "horizontal": "Yatay",
+    "vertical": "Dikey",
+    "backgrounds": "Arkaplanlar",
+    "fashion": "Moda",
+    "nature": "Doğa",
+    "science": "Bilim",
+    "education": "Eğitim",
+    "feelings": "Duygular",
+    "health": "Sağlık",
+    "people": "İnsanlar",
+    "religion": "Din",
+    "places": "Mekanlar",
+    "animals": "Hayvanlar",
+    "industry": "Endüstri",
+    "computer": "Bilgisayar",
+    "food": "Yemek",
+    "sports": "Spor",
+    "transportation": "Ulaşım",
+    "travel": "Seyahat",
+    "buildings": "Binalar",
+    "business": "İş",
+    "music": "Müzik",
+    "grayscale": "Gri Tonlama",
+    "transparent": "Şeffaf",
+    "red": "Kırmızı",
+    "orange": "Turuncu",
+    "yellow": "Sarı",
+    "green": "Yeşil",
+    "turquoise": "Turkuaz",
+    "blue": "Mavi",
+    "lilac": "Lila",
+    "pink": "Pembe",
+    "white": "Beyaz",
+    "gray": "Gri",
+    "black": "Siyah",
+    "brown": "Kahverengi",
+}
+
+OPTION_LABELS_EN: Dict[str, str] = {
+    "all": "All",
+    "photo": "Photo",
+    "illustration": "Illustration",
+    "vector": "Vector",
+    "horizontal": "Horizontal",
+    "vertical": "Vertical",
+    "grayscale": "Grayscale",
+}
+
+
+def current_lang() -> str:
+    return st.session_state.get("search_lang", "tr")
+
+
+def t(key: str) -> str:
+    lang = current_lang()
+    return I18N.get(lang, I18N["tr"]).get(key, key)
+
+
+def option_label(value: str) -> str:
+    lang = current_lang()
+    if lang == "tr":
+        return OPTION_LABELS_TR.get(value, value.replace("_", " ").title())
+    return OPTION_LABELS_EN.get(value, value.replace("_", " ").title())
+
 
 def inject_custom_css(theme_mode: str) -> None:
     is_dark = theme_mode == "dark"
     bg_primary = "#0b1220" if is_dark else "#f3f6fb"
     text_primary = "#e8eefc" if is_dark else "#15253f"
-    text_muted = "#afbdd3" if is_dark else "#5a6881"
+    text_muted = "#c5d3ea" if is_dark else "#5a6881"
     card_bg = "#111c33" if is_dark else "#ffffff"
     card_border = "#23304e" if is_dark else "#d9e2ef"
     input_bg = "#0b1a33" if is_dark else "#102f5d"
     card_stat_bg = "#0d172b" if is_dark else "#f6f9ff"
+    btn_bg = "#1b315a" if is_dark else "#132f57"
+    btn_border = "#2a4b88" if is_dark else "#1c4c90"
+    btn_text = "#f4f8ff"
 
     css = """
         <style>
@@ -150,6 +317,7 @@ def inject_custom_css(theme_mode: str) -> None:
           color: #f6f9ff !important;
           border: 1px solid #1f4f8f !important;
           border-radius: 10px !important;
+          min-height: 2.85rem !important;
         }
 
         [data-testid="stExpander"] [data-baseweb="select"] span,
@@ -201,8 +369,18 @@ def inject_custom_css(theme_mode: str) -> None:
         .stDownloadButton > button,
         .stLinkButton > a {
           border-radius: 10px;
-          min-height: 2.65rem;
+          min-height: 2.85rem;
           font-weight: 700;
+          background: __BTN_BG__ !important;
+          border: 1px solid __BTN_BORDER__ !important;
+          color: __BTN_TEXT__ !important;
+          width: 100% !important;
+        }
+
+        .stButton > button:hover,
+        .stDownloadButton > button:hover,
+        .stLinkButton > a:hover {
+          filter: brightness(1.08);
         }
 
         button[kind="primary"] {
@@ -243,6 +421,9 @@ def inject_custom_css(theme_mode: str) -> None:
         .replace("__CARD_BORDER__", card_border)
         .replace("__INPUT_BG__", input_bg)
         .replace("__CARD_STAT_BG__", card_stat_bg)
+        .replace("__BTN_BG__", btn_bg)
+        .replace("__BTN_BORDER__", btn_border)
+        .replace("__BTN_TEXT__", btn_text)
     )
 
     st.markdown(css, unsafe_allow_html=True)
@@ -439,10 +620,10 @@ def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
 
 def render_hero() -> None:
     st.markdown(
-        """
+        f"""
         <div class="hero">
-            <h1>Pixabay Visual Search</h1>
-            <p>Google tarzı hızlı arama + Pixabay filtreleri + tek tık indirme.</p>
+            <h1>{t("hero_title")}</h1>
+            <p>{t("hero_subtitle")}</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -453,13 +634,13 @@ def render_top_controls() -> None:
     c1, c2, c3 = st.columns([6, 2, 2])
     with c2:
         st.selectbox(
-            "Dil",
+            t("language"),
             options=LANG_OPTIONS,
             key="search_lang",
             format_func=lambda x: "Türkçe" if x == "tr" else "English",
         )
     with c3:
-        label = "🌙 Koyu Tema" if st.session_state.theme_mode == "light" else "☀️ Açık Tema"
+        label = t("theme_dark") if st.session_state.theme_mode == "light" else t("theme_light")
         if st.button(label, key="theme_toggle_btn", use_container_width=True):
             toggle_theme()
             safe_rerun()
@@ -468,7 +649,7 @@ def render_top_controls() -> None:
 def run_search(reset_page: bool) -> None:
     query = st.session_state.search_query_input.strip()
     if not query:
-        st.warning("Lütfen arama kelimesi girin.")
+        st.warning(t("search_empty"))
         st.session_state.search_active = False
         return
 
@@ -479,7 +660,7 @@ def run_search(reset_page: bool) -> None:
 
 
 def render_search_section() -> None:
-    st.subheader("Arama")
+    st.subheader(t("search_header"))
 
     if st.session_state._request_reset:
         reset_all()
@@ -492,68 +673,68 @@ def render_search_section() -> None:
     q_col, b_col = st.columns([7, 1.6])
     with q_col:
         st.text_input(
-            "Görsel arama",
+            t("search_input"),
             key="search_query_input",
-            placeholder="Pixabay'da görsel ara (ör: istanbul, cat, pubg)",
+            placeholder=t("search_placeholder"),
             label_visibility="collapsed",
         )
     with b_col:
-        if st.button("Ara", type="primary", use_container_width=True):
+        if st.button(t("search_btn"), type="primary", use_container_width=True):
             run_search(reset_page=True)
 
     st.markdown("<div class='filter-wrap'>", unsafe_allow_html=True)
-    with st.expander("Filtreler", expanded=True):
+    with st.expander(t("filters"), expanded=True):
         row1 = st.columns(4)
         with row1[0]:
-            st.selectbox("Görsel Türü", IMAGE_TYPES, key="image_type")
+            st.selectbox(t("image_type"), IMAGE_TYPES, key="image_type", format_func=option_label)
         with row1[1]:
             st.selectbox(
-                "Kategori",
+                t("category"),
                 CATEGORIES,
                 key="category",
-                format_func=lambda x: "Hepsi" if x == "all" else x,
+                format_func=option_label,
             )
         with row1[2]:
             st.selectbox(
-                "Yatay/Dikey",
+                t("orientation"),
                 ORIENTATIONS,
                 key="orientation",
-                format_func=lambda x: "Hepsi" if x == "all" else ("Yatay" if x == "horizontal" else "Dikey"),
+                format_func=option_label,
             )
         with row1[3]:
-            st.selectbox("Sonuç Sayısı", PER_PAGE_OPTIONS, key="per_page")
+            st.selectbox(t("per_page"), PER_PAGE_OPTIONS, key="per_page")
 
         row2 = st.columns(3)
         with row2[0]:
             st.selectbox(
-                "Renk",
+                t("color"),
                 COLORS,
                 key="color",
-                format_func=lambda x: "Hepsi" if x == "all" else x,
+                format_func=option_label,
             )
         with row2[1]:
-            st.slider("Grid Kolon", min_value=2, max_value=4, step=1, key="columns")
+            st.slider(t("columns"), min_value=2, max_value=4, step=1, key="columns")
         with row2[2]:
-            st.toggle("Adult içerikleri göster", key="show_adult")
+            st.toggle(t("adult"), key="show_adult")
 
         action_cols = st.columns(3)
         with action_cols[0]:
-            if st.button("Filtreyi Uygula", use_container_width=True):
+            if st.button(t("apply"), use_container_width=True):
                 run_search(reset_page=True)
         with action_cols[1]:
-            if st.button("Sıfırla", use_container_width=True):
+            if st.button(t("reset"), use_container_width=True):
                 st.session_state._request_reset = True
                 safe_rerun()
         with action_cols[2]:
-            if st.button("Yenile", use_container_width=True):
+            if st.button(t("refresh"), use_container_width=True):
                 run_search(reset_page=False)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_showcase() -> None:
-    st.markdown("<div class='section-title'>Örnek Görseller</div>", unsafe_allow_html=True)
-    st.caption("Arama yapmadan önce örnek kartları görüntüleyebilirsin.")
+    st.markdown(f"<div class='section-title'>{t('showcase_title')}</div>", unsafe_allow_html=True)
+    st.caption(t("showcase_caption"))
 
     cols = st.columns(4)
     for i, item in enumerate(SHOWCASE_IMAGES):
@@ -568,10 +749,10 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
     downloads_total = sum(int(item.get("downloads", 0)) for item in hits)
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Toplam Sonuç", total_hits)
-    c2.metric("Bu Sayfada Beğeni", likes_total)
-    c3.metric("Bu Sayfada Görüntülenme", views_total)
-    c4.metric("Bu Sayfada İndirme", downloads_total)
+    c1.metric(t("total_results"), total_hits)
+    c2.metric(t("page_likes"), likes_total)
+    c3.metric(t("page_views"), views_total)
+    c4.metric(t("page_downloads"), downloads_total)
 
 
 def render_pagination(total_hits: int, key_prefix: str) -> None:
@@ -579,12 +760,12 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
 
     p1, p2, p3, p4 = st.columns([1, 1.4, 1.4, 1])
     with p1:
-        if st.button("◀ Önceki", key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
+        if st.button(t("prev"), key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
             st.session_state.page -= 1
             safe_rerun()
     with p2:
         selected_page = st.number_input(
-            "Sayfa",
+            t("page"),
             key=f"{key_prefix}_page",
             min_value=1,
             max_value=total_pages,
@@ -595,9 +776,9 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
             st.session_state.page = int(selected_page)
             safe_rerun()
     with p3:
-        st.caption(f"Toplam sayfa: {total_pages}")
+        st.caption(f"{t('total_pages')}: {total_pages}")
     with p4:
-        if st.button("Sonraki ▶", key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
+        if st.button(t("next"), key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
             st.session_state.page += 1
             safe_rerun()
 
@@ -619,45 +800,52 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         if preview_url:
             st.image(preview_url, use_container_width=True)
         else:
-            st.info("Önizleme görseli yok.")
+            st.info(t("preview_missing"))
 
-        st.markdown("<div class='card-label'>Etiketler</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='card-label'>{t('tags')}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='card-value'>{tags}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='card-label'>Kullanıcı</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='card-label'>{t('user')}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='card-value'>{user}</div>", unsafe_allow_html=True)
 
         st.markdown(
             f"""
             <div class="card-stats">
-              <div class="card-stat-box"><div class="card-stat-title">Beğeni</div><div class="card-stat-value">{likes}</div></div>
-              <div class="card-stat-box"><div class="card-stat-title">Görüntülenme</div><div class="card-stat-value">{views}</div></div>
-              <div class="card-stat-box"><div class="card-stat-title">İndirme</div><div class="card-stat-value">{downloads}</div></div>
+              <div class="card-stat-box"><div class="card-stat-title">{t('likes')}</div><div class="card-stat-value">{likes}</div></div>
+              <div class="card-stat-box"><div class="card-stat-title">{t('views')}</div><div class="card-stat-value">{views}</div></div>
+              <div class="card-stat-box"><div class="card-stat-title">{t('downloads')}</div><div class="card-stat-value">{downloads}</div></div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.caption(f"Çözünürlük: {width} x {height}")
+        st.caption(f"{t('resolution')}: {width} x {height}")
 
         a1, a2 = st.columns(2)
         with a1:
             if image_url:
                 if hasattr(st, "link_button"):
-                    st.link_button("Görseli Aç", url=image_url, use_container_width=True)
+                    st.link_button(t("open_image"), url=image_url, use_container_width=True)
                 else:
-                    st.markdown(f"[Görseli Aç]({image_url})")
+                    st.markdown(f"[{t('open_image')}]({image_url})")
             else:
-                st.button("Görseli Aç", disabled=True, use_container_width=True)
+                st.button(t("open_image"), disabled=True, use_container_width=True)
 
         with a2:
-            if st.button("Cihaza Kaydet", key=f"{key_prefix}_save_{image_id}", use_container_width=True):
-                if not image_url:
-                    st.error("Bu görsel için indirilebilir URL bulunamadı.")
-                else:
-                    try:
-                        saved = save_image_locally(image_url=image_url, image_id=image_id, tags=tags)
-                        st.success(f"Kaydedildi: {saved}")
-                    except RuntimeError as exc:
-                        st.error(str(exc))
+            if image_url:
+                try:
+                    image_bytes = fetch_image_bytes(image_url)
+                    st.download_button(
+                        t("save_device"),
+                        data=image_bytes,
+                        file_name=filename_for_item(image_id=image_id, tags=tags),
+                        mime="image/jpeg",
+                        key=f"{key_prefix}_download_{image_id}",
+                        use_container_width=True,
+                    )
+                except RuntimeError as exc:
+                    st.button(t("save_device"), disabled=True, use_container_width=True)
+                    st.caption(str(exc))
+            else:
+                st.button(t("save_device"), disabled=True, use_container_width=True)
 
 
 def render_results(hits: List[Dict[str, Any]]) -> None:
@@ -686,7 +874,7 @@ def main() -> None:
         render_showcase()
         return
 
-    with st.spinner("Pixabay sonuçları getiriliyor..."):
+    with st.spinner(t("loading")):
         try:
             data = search_pixabay(
                 query=st.session_state.search_query,
@@ -708,12 +896,12 @@ def main() -> None:
     total_hits = int(data.get("totalHits", 0))
 
     if total_hits == 0 or not hits:
-        st.warning("Sonuç bulunamadı. Farklı kelime veya filtre deneyin.")
+        st.warning(t("no_results"))
         render_showcase()
         return
 
     render_summary(total_hits=total_hits, hits=hits)
-    st.markdown("### Sonuçlar")
+    st.markdown(t("results_title"))
     render_pagination(total_hits, key_prefix="top")
     render_results(hits)
     render_pagination(total_hits, key_prefix="bottom")
