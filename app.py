@@ -73,6 +73,7 @@ I18N: Dict[str, Dict[str, str]] = {
         "hero_title": "Pixabay Görsel Arama",
         "hero_subtitle": "Google tarzı hızlı arama + Pixabay filtreleri + tek tık indirme.",
         "language": "Dil",
+        "theme": "Tema",
         "theme_dark": "🌙 Koyu Tema",
         "theme_light": "☀️ Açık Tema",
         "search_header": "Arama",
@@ -112,13 +113,14 @@ I18N: Dict[str, Dict[str, str]] = {
         "search_empty": "Lütfen arama kelimesi girin.",
         "loading": "Pixabay sonuçları getiriliyor...",
         "no_results": "Sonuç bulunamadı. Farklı kelime veya filtre deneyin.",
-        "results_title": "### Sonuçlar",
+        "results_title": "Sonuçlar",
         "saved_prefix": "Kaydedildi",
     },
     "en": {
         "hero_title": "Pixabay Visual Search",
         "hero_subtitle": "Google-style quick search + Pixabay filters + one-click download.",
         "language": "Language",
+        "theme": "Theme",
         "theme_dark": "🌙 Dark Theme",
         "theme_light": "☀️ Light Theme",
         "search_header": "Search",
@@ -158,7 +160,7 @@ I18N: Dict[str, Dict[str, str]] = {
         "search_empty": "Please enter a search term.",
         "loading": "Fetching results from Pixabay...",
         "no_results": "No results found. Try another keyword or filter.",
-        "results_title": "### Results",
+        "results_title": "Results",
         "saved_prefix": "Saved",
     },
 }
@@ -261,6 +263,10 @@ def inject_custom_css(theme_mode: str) -> None:
         }
 
         [data-testid="stSidebar"] { display: none; }
+        [data-testid="stHeadingWithActionElements"] button,
+        [data-testid="stHeadingWithActionElements"] a {
+          display: none !important;
+        }
 
         .hero {
           background: linear-gradient(120deg, #0f766e 0%, #155e75 52%, #1d4d8f 100%);
@@ -457,6 +463,7 @@ def init_state() -> None:
         "search_query": "",
         "search_query_input": "",
         "search_lang": "tr",
+        "search_lang_select": "tr",
         "theme_mode": "light",
         "image_type": "photo",
         "category": "all",
@@ -633,13 +640,17 @@ def render_hero() -> None:
 def render_top_controls() -> None:
     c1, c2, c3 = st.columns([6, 2, 2])
     with c2:
-        st.selectbox(
+        selected_lang = st.selectbox(
             t("language"),
             options=LANG_OPTIONS,
-            key="search_lang",
+            key="search_lang_select",
             format_func=lambda x: "Türkçe" if x == "tr" else "English",
         )
+        if selected_lang != st.session_state.search_lang:
+            st.session_state.search_lang = selected_lang
+            safe_rerun()
     with c3:
+        st.markdown(f"**{t('theme')}**")
         label = t("theme_dark") if st.session_state.theme_mode == "light" else t("theme_light")
         if st.button(label, key="theme_toggle_btn", use_container_width=True):
             toggle_theme()
@@ -660,7 +671,7 @@ def run_search(reset_page: bool) -> None:
 
 
 def render_search_section() -> None:
-    st.subheader(t("search_header"))
+    st.markdown(f"<div class='section-title'>{t('search_header')}</div>", unsafe_allow_html=True)
 
     if st.session_state._request_reset:
         reset_all()
@@ -670,16 +681,18 @@ def render_search_section() -> None:
         st.session_state.search_query_input = ""
         st.session_state._clear_search_input = False
 
-    q_col, b_col = st.columns([7, 1.6])
-    with q_col:
-        st.text_input(
-            t("search_input"),
-            key="search_query_input",
-            placeholder=t("search_placeholder"),
-            label_visibility="collapsed",
-        )
-    with b_col:
-        if st.button(t("search_btn"), type="primary", use_container_width=True):
+    with st.form("search_form_main", clear_on_submit=False):
+        q_col, b_col = st.columns([7, 1.6])
+        with q_col:
+            st.text_input(
+                t("search_input"),
+                key="search_query_input",
+                placeholder=t("search_placeholder"),
+                label_visibility="collapsed",
+            )
+        with b_col:
+            submitted = st.form_submit_button(t("search_btn"), type="primary", use_container_width=True)
+        if submitted:
             run_search(reset_page=True)
 
     st.markdown("<div class='filter-wrap'>", unsafe_allow_html=True)
@@ -758,7 +771,7 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
 def render_pagination(total_hits: int, key_prefix: str) -> None:
     total_pages = max(1, min(math.ceil(total_hits / st.session_state.per_page), 500))
 
-    p1, p2, p3, p4 = st.columns([1, 1.4, 1.4, 1])
+    p1, p2, p3 = st.columns([1, 1.2, 1])
     with p1:
         if st.button(t("prev"), key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
             st.session_state.page -= 1
@@ -771,13 +784,13 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
             max_value=total_pages,
             value=st.session_state.page,
             step=1,
+            label_visibility="collapsed",
         )
         if int(selected_page) != st.session_state.page:
             st.session_state.page = int(selected_page)
             safe_rerun()
+        st.caption(f"{t('page')}: {st.session_state.page} | {t('total_pages')}: {total_pages}")
     with p3:
-        st.caption(f"{t('total_pages')}: {total_pages}")
-    with p4:
         if st.button(t("next"), key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
             st.session_state.page += 1
             safe_rerun()
@@ -900,10 +913,10 @@ def main() -> None:
         render_showcase()
         return
 
-    render_summary(total_hits=total_hits, hits=hits)
-    st.markdown(t("results_title"))
-    render_pagination(total_hits, key_prefix="top")
     render_results(hits)
+    st.markdown("---")
+    st.markdown(f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True)
+    render_summary(total_hits=total_hits, hits=hits)
     render_pagination(total_hits, key_prefix="bottom")
 
 
