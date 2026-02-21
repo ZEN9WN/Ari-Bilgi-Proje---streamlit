@@ -243,7 +243,7 @@ def inject_custom_css(theme_mode: str) -> None:
     text_primary = "#e8eefc" if is_dark else "#15253f"
     text_muted = "#c5d3ea" if is_dark else "#5a6881"
     card_bg = "#111c33" if is_dark else "#ffffff"
-    card_border = "#23304e" if is_dark else "#d9e2ef"
+    card_border = "#23304e" if is_dark else "#7f8ca1"
     input_bg = "#0b1a33" if is_dark else "#102f5d"
     card_stat_bg = "#0d172b" if is_dark else "#f6f9ff"
     btn_bg = "#1b315a" if is_dark else "#132f57"
@@ -279,9 +279,10 @@ def inject_custom_css(theme_mode: str) -> None:
           background: linear-gradient(120deg, #0f766e 0%, #155e75 52%, #1d4d8f 100%);
           color: white;
           border-radius: 18px;
-          padding: 22px 24px;
-          margin-bottom: 14px;
+          padding: 12px 20px;
+          margin-bottom: 10px;
           box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+          cursor: pointer;
         }
 
         .hero h1 {
@@ -291,9 +292,13 @@ def inject_custom_css(theme_mode: str) -> None:
         }
 
         .hero p {
-          margin: 8px 0 0;
+          margin: 2px 0 0;
           color: #e8f2ff !important;
-          font-size: 1.05rem;
+          font-size: 0.92rem;
+        }
+        .hero-link {
+          text-decoration: none !important;
+          display: block;
         }
 
         .filter-wrap {
@@ -350,6 +355,18 @@ def inject_custom_css(theme_mode: str) -> None:
           border-radius: 10px !important;
           min-height: 2.85rem !important;
         }
+        [data-testid="stNumberInput"] button {
+          display: none !important;
+        }
+        [data-testid="stNumberInput"] input {
+          text-align: center !important;
+          font-weight: 700 !important;
+        }
+        .page-center {
+          text-align: center;
+          color: __TEXT_PRIMARY__;
+          font-weight: 700;
+        }
 
         [data-testid="stExpander"] [data-baseweb="select"] span,
         [data-testid="stExpander"] [data-baseweb="select"] div,
@@ -360,6 +377,7 @@ def inject_custom_css(theme_mode: str) -> None:
         [data-testid="stVerticalBlockBorderWrapper"] {
           background: __CARD_BG__;
           border-color: __CARD_BORDER__ !important;
+          border-width: 1.5px !important;
         }
 
         .card-label {
@@ -653,10 +671,12 @@ def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
 def render_hero() -> None:
     st.markdown(
         f"""
-        <div class="hero">
-            <h1>{t("hero_title")}</h1>
-            <p>{t("hero_subtitle")}</p>
-        </div>
+        <a class="hero-link" href="#top">
+          <div class="hero">
+              <h1>{t("hero_title")}</h1>
+              <p>{t("hero_subtitle")}</p>
+          </div>
+        </a>
         """,
         unsafe_allow_html=True,
     )
@@ -819,7 +839,10 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
         if int(selected_page) != st.session_state.page:
             st.session_state.page = int(selected_page)
             safe_rerun()
-        st.caption(f"{t('page')}: {st.session_state.page} | {t('total_pages')}: {total_pages}")
+        st.markdown(
+            f"<div class='page-center'>{t('page')}: {st.session_state.page} | {t('total_pages')}: {total_pages}</div>",
+            unsafe_allow_html=True,
+        )
     with p3:
         if st.button(t("next"), key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
             st.session_state.page += 1
@@ -949,7 +972,6 @@ def main() -> None:
     st.markdown(f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True)
     render_summary(total_hits=total_hits, hits=hits)
     render_pagination(total_hits, key_prefix="bottom")
-    st.markdown(f"<a class='scroll-top-link' href='#top'>{t('back_top')}</a>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
