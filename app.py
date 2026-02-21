@@ -405,9 +405,21 @@ def render_quick_searches() -> None:
                 apply_quick_search(term)
 
 
+<<<<<<< ours
 def render_showcase() -> None:
     st.markdown("### Örnek Görseller")
     st.caption("Arama yapmadan önce ilham almak için örnek galeriyi görebilirsin.")
+=======
+            st.session_state.search_query = cleaned
+            st.session_state.category = category
+            st.session_state.color = color
+            st.session_state.image_type = image_type
+            st.session_state.safesearch = not show_adult
+            st.session_state.per_page = per_page
+            st.session_state.columns = columns
+            st.session_state.page = 1
+            st.session_state.search_active = True
+>>>>>>> theirs
 
     cols = st.columns(4)
     for i, item in enumerate(SHOWCASE_IMAGES):
@@ -428,18 +440,21 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
     m4.metric("Bu Sayfada İndirme", downloads_total)
 
 
-def render_pagination(total_hits: int, key_prefix: str) -> None:
+def render_pagination(total_hits: int) -> None:
     total_pages = max(1, min(math.ceil(total_hits / st.session_state.per_page), 500))
 
     c1, c2, c3, c4 = st.columns([1, 1.4, 1.4, 1])
     with c1:
+<<<<<<< ours
         if st.button("◀ Önceki", key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
+=======
+        if st.button("◀ Önceki", disabled=st.session_state.page <= 1, use_container_width=True):
+>>>>>>> theirs
             st.session_state.page -= 1
             safe_rerun()
     with c2:
         selected_page = st.number_input(
             "Sayfa",
-            key=f"{key_prefix}_page_input",
             min_value=1,
             max_value=total_pages,
             value=st.session_state.page,
@@ -451,7 +466,11 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
     with c3:
         st.markdown(f"<div class='kpi-note'>Toplam sayfa: <b>{total_pages}</b></div>", unsafe_allow_html=True)
     with c4:
+<<<<<<< ours
         if st.button("Sonraki ▶", key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
+=======
+        if st.button("Sonraki ▶", disabled=st.session_state.page >= total_pages, use_container_width=True):
+>>>>>>> theirs
             st.session_state.page += 1
             safe_rerun()
 
@@ -483,6 +502,7 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         m3.metric("İndirme", downloads)
         st.caption(f"Çözünürlük: {width} x {height}")
 
+<<<<<<< ours
         d1, d2 = st.columns(2)
         with d1:
             if image_url:
@@ -492,6 +512,27 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
                     st.markdown(f"[Görseli aç]({image_url})")
             else:
                 st.button("Görseli aç", disabled=True, use_container_width=True)
+=======
+        file_name = filename_for_item(image_id=image_id, tags=tags)
+        dl1, dl2 = st.columns(2)
+
+        with dl1:
+            if image_url:
+                try:
+                    image_bytes = fetch_image_bytes(image_url)
+                    st.download_button(
+                        "Dosyayı indir",
+                        data=image_bytes,
+                        file_name=file_name,
+                        mime="image/jpeg",
+                        key=f"{key_prefix}_download_btn_{image_id}",
+                        use_container_width=True,
+                    )
+                except RuntimeError:
+                    st.button("Dosyayı indir", disabled=True, use_container_width=True)
+            else:
+                st.button("Dosyayı indir", disabled=True, use_container_width=True)
+>>>>>>> theirs
 
         with d2:
             if st.button("Cihaza kaydet", key=f"{key_prefix}_save_{image_id}", use_container_width=True):
@@ -555,9 +596,9 @@ def main() -> None:
 
     render_summary(total_hits=total_hits, hits=hits)
     st.markdown("### Sonuçlar")
-    render_pagination(total_hits=total_hits, key_prefix="top")
+    render_pagination(total_hits=total_hits)
     render_results_grid(hits=hits)
-    render_pagination(total_hits=total_hits, key_prefix="bottom")
+    render_pagination(total_hits=total_hits)
 
 
 if __name__ == "__main__":
