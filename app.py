@@ -107,9 +107,9 @@ def inject_custom_css() -> None:
         }
 
         .quick-title {
-          font-size: 0.9rem;
+          font-size: 0.95rem;
           color: #445066;
-          margin: 6px 0 10px;
+          margin: 8px 0 10px;
           font-weight: 700;
         }
 
@@ -124,8 +124,10 @@ def inject_custom_css() -> None:
           margin-top: 6px;
         }
 
-        .stButton > button, .stDownloadButton > button {
+        .stButton > button, .stDownloadButton > button, .stLinkButton > a {
           border-radius: 10px;
+          font-weight: 650;
+          min-height: 2.7rem;
         }
         </style>
         """,
@@ -299,7 +301,7 @@ def init_state() -> None:
         "category": "all",
         "color": "all",
         "image_type": "photo",
-        "safesearch": True,
+        "show_adult": False,
         "per_page": 20,
         "page": 1,
         "columns": 3,
@@ -308,21 +310,14 @@ def init_state() -> None:
         st.session_state.setdefault(key, value)
 
 
-def clear_prepared_downloads() -> None:
-    for key in list(st.session_state.keys()):
-        if "_prepared_" in key:
-            del st.session_state[key]
-
-
 def reset_state() -> None:
-    clear_prepared_downloads()
     for key in [
         "search_active",
         "search_query",
         "category",
         "color",
         "image_type",
-        "safesearch",
+        "show_adult",
         "per_page",
         "page",
         "columns",
@@ -336,7 +331,6 @@ def apply_quick_search(query: str) -> None:
     st.session_state.search_query = query
     st.session_state.page = 1
     st.session_state.search_active = True
-    clear_prepared_downloads()
     safe_rerun()
 
 
@@ -354,87 +348,74 @@ def render_top_hero() -> None:
 
 def render_search_panel() -> None:
     with st.container(border=True):
-        with st.form("top_search_form", clear_on_submit=False):
-            q_col, b_col = st.columns([7, 1.2])
-            with q_col:
-                query = st.text_input(
-                    "Görsel arama",
-                    value=st.session_state.search_query,
-                    placeholder="Pixabay'da görsel ara (ör: istanbul, cat, pubg)",
-                    label_visibility="collapsed",
-                )
-            with b_col:
-                search_clicked = st.form_submit_button("Ara", use_container_width=True)
+        st.markdown("#### Arama")
+        q_col, b_col = st.columns([7, 1.6])
+        with q_col:
+            st.text_input(
+                "Görsel arama",
+                key="search_query",
+                placeholder="Pixabay'da görsel ara (ör: istanbul, cat, pubg)",
+                label_visibility="collapsed",
+            )
+        with b_col:
+            search_clicked = st.button("Ara", type="primary", use_container_width=True)
 
-            st.markdown("<div class='quick-title'>Filtreler</div>", unsafe_allow_html=True)
+        with st.expander("Filtreler", expanded=True):
             f1, f2, f3, f4 = st.columns(4)
             with f1:
-                image_type = st.selectbox(
-                    "Görsel tipi",
-                    IMAGE_TYPES,
-                    index=IMAGE_TYPES.index(st.session_state.image_type),
-                )
+                st.selectbox("Görsel tipi", IMAGE_TYPES, key="image_type")
             with f2:
-                category = st.selectbox(
+                st.selectbox(
                     "Kategori",
                     options=CATEGORIES,
-                    index=CATEGORIES.index(st.session_state.category),
+                    key="category",
                     format_func=lambda x: "Hepsi" if x == "all" else x,
                 )
             with f3:
-                color = st.selectbox(
+                st.selectbox(
                     "Renk",
                     options=COLORS,
-                    index=COLORS.index(st.session_state.color),
+                    key="color",
                     format_func=lambda x: "Hepsi" if x == "all" else x,
                 )
             with f4:
-                per_page = st.selectbox(
-                    "Sayfa başına sonuç",
-                    PER_PAGE_OPTIONS,
-                    index=PER_PAGE_OPTIONS.index(st.session_state.per_page),
-                )
+                st.selectbox("Sayfa başına sonuç", PER_PAGE_OPTIONS, key="per_page")
 
             opt1, opt2 = st.columns(2)
             with opt1:
-                columns = st.slider("Grid kolon", min_value=2, max_value=4, value=st.session_state.columns, step=1)
+                st.slider("Grid kolon", min_value=2, max_value=4, step=1, key="columns")
             with opt2:
-                show_adult = st.toggle("Adult içerikleri göster", value=not st.session_state.safesearch)
+                st.toggle("Adult içerikleri göster", key="show_adult")
 
-            a1, a2 = st.columns([1, 1])
+            a1, a2, a3 = st.columns([1, 1, 1])
             with a1:
-                reset_clicked = st.form_submit_button("Filtreleri sıfırla", use_container_width=True)
+                apply_filter_clicked = st.button("Filtreyi Uygula", use_container_width=True)
             with a2:
-                keep_clicked = st.form_submit_button("Mevcut filtrelerle yenile", use_container_width=True)
+                reset_clicked = st.button("Sıfırla", use_container_width=True)
+            with a3:
+                refresh_clicked = st.button("Yenile", use_container_width=True)
 
     if reset_clicked:
         reset_state()
         safe_rerun()
 
-    if search_clicked or keep_clicked:
-        cleaned = query.strip()
+    if search_clicked or apply_filter_clicked or refresh_clicked:
+        cleaned = st.session_state.search_query.strip()
         if not cleaned:
             st.warning("Lütfen arama kelimesi girin.")
             st.session_state.search_active = False
             return
 
         st.session_state.search_query = cleaned
-        st.session_state.category = category
-        st.session_state.color = color
-        st.session_state.image_type = image_type
-        st.session_state.safesearch = not show_adult
-        st.session_state.per_page = per_page
-        st.session_state.columns = columns
         st.session_state.page = 1
         st.session_state.search_active = True
-        clear_prepared_downloads()
 
 
 def render_quick_searches() -> None:
     st.markdown("<div class='quick-title'>Hızlı Aramalar</div>", unsafe_allow_html=True)
-    cols = st.columns(len(QUICK_SEARCHES))
+    cols = st.columns(3)
     for i, term in enumerate(QUICK_SEARCHES):
-        with cols[i]:
+        with cols[i % 3]:
             if st.button(term.title(), key=f"quick_search_{term}", use_container_width=True):
                 apply_quick_search(term)
 
@@ -476,7 +457,6 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
     with c1:
         if st.button("◀ Önceki", key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
             st.session_state.page -= 1
-            clear_prepared_downloads()
             safe_rerun()
     with c2:
         selected_page = st.number_input(
@@ -489,14 +469,12 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
         )
         if int(selected_page) != st.session_state.page:
             st.session_state.page = int(selected_page)
-            clear_prepared_downloads()
             safe_rerun()
     with c3:
         st.markdown(f"<div class='kpi-note'>Toplam sayfa: <b>{total_pages}</b></div>", unsafe_allow_html=True)
     with c4:
         if st.button("Sonraki ▶", key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
             st.session_state.page += 1
-            clear_prepared_downloads()
             safe_rerun()
 
 
@@ -527,32 +505,18 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         m3.metric("İndirme", downloads)
         st.caption(f"Çözünürlük: {width} x {height}")
 
-        file_name = filename_for_item(image_id=image_id, tags=tags)
-        prepare_key = f"{key_prefix}_prepared_{image_id}"
-
         d1, d2 = st.columns(2)
         with d1:
             if image_url:
-                if st.button("İndirmeyi hazırla", key=f"{key_prefix}_prepare_{image_id}", use_container_width=True):
-                    try:
-                        st.session_state[prepare_key] = fetch_image_bytes(image_url)
-                    except RuntimeError as exc:
-                        st.error(str(exc))
-
-                if prepare_key in st.session_state:
-                    st.download_button(
-                        "Dosyayı indir",
-                        data=st.session_state[prepare_key],
-                        file_name=file_name,
-                        mime="image/jpeg",
-                        key=f"{key_prefix}_download_{image_id}",
-                        use_container_width=True,
-                    )
+                if hasattr(st, "link_button"):
+                    st.link_button("Görseli aç", url=image_url, use_container_width=True)
+                else:
+                    st.markdown(f"[Görseli aç]({image_url})")
             else:
-                st.button("İndirmeyi hazırla", disabled=True, use_container_width=True)
+                st.button("Görseli aç", disabled=True, use_container_width=True)
 
         with d2:
-            if st.button("Sunucuya kaydet", key=f"{key_prefix}_save_{image_id}", use_container_width=True):
+            if st.button("Cihaza kaydet", key=f"{key_prefix}_save_{image_id}", use_container_width=True):
                 if not image_url:
                     st.error("Bu görsel için indirilebilir URL bulunamadı.")
                 else:
@@ -594,7 +558,7 @@ def main() -> None:
                 query=st.session_state.search_query,
                 category=st.session_state.category,
                 color=st.session_state.color,
-                safesearch=st.session_state.safesearch,
+                safesearch=not st.session_state.show_adult,
                 page=st.session_state.page,
                 per_page=st.session_state.per_page,
                 image_type=st.session_state.image_type,
