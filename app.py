@@ -1,13 +1,17 @@
+<<<<<<< ours
 from __future__ import annotations
 
 import math
 import os
+=======
+>>>>>>> theirs
 import re
 from pathlib import Path
 from typing import Any, Dict, List
 
 import requests
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 API_URL = "https://pixabay.com/api/"
 DEFAULT_API_KEY = "49738243-e25f3b714305e2a1c2cd97721"
@@ -153,11 +157,8 @@ def safe_rerun() -> None:
 
 
 def get_pixabay_api_key() -> str:
-    env_key = os.getenv("PIXABAY_KEY", "").strip()
-    if env_key:
-        return env_key
-
     try:
+<<<<<<< ours
         secret_key = str(st.secrets["PIXABAY_KEY"]).strip()
         if secret_key:
             return secret_key
@@ -181,6 +182,11 @@ def slugify_tags(tags: str) -> str:
     raw = tags.split(",")[0].strip().lower() if tags else "image"
     slug = re.sub(r"[^a-z0-9]+", "-", raw).strip("-")
     return slug or "image"
+=======
+        return st.secrets["PIXABAY_KEY"]
+    except (StreamlitSecretNotFoundError, KeyError):
+        return DEFAULT_API_KEY
+>>>>>>> theirs
 
 
 def filename_for_item(image_id: int, tags: str) -> str:
@@ -264,10 +270,15 @@ def fetch_image_bytes(image_url: str) -> bytes:
         raise RuntimeError(f"Görsel indirilemedi: {exc}") from exc
     return response.content
 
+<<<<<<< ours
 
 def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
     data = fetch_image_bytes(image_url)
     download_dir = get_download_dir()
+=======
+    download_dir = Path("downloads")
+    download_dir.mkdir(exist_ok=True)
+>>>>>>> theirs
 
     file_path = download_dir / filename_for_item(image_id=image_id, tags=tags)
     counter = 1
@@ -382,7 +393,7 @@ def render_search_panel() -> None:
 
     if reset_clicked:
         reset_state()
-        safe_rerun()
+        st.rerun()
 
     if search_clicked or apply_filter_clicked or refresh_clicked:
         cleaned = st.session_state.search_query.strip()
@@ -451,8 +462,13 @@ def render_pagination(total_hits: int) -> None:
         if st.button("◀ Önceki", disabled=st.session_state.page <= 1, use_container_width=True):
 >>>>>>> theirs
             st.session_state.page -= 1
+<<<<<<< ours
             safe_rerun()
     with c2:
+=======
+            st.rerun()
+    with pager_col2:
+>>>>>>> theirs
         selected_page = st.number_input(
             "Sayfa",
             min_value=1,
@@ -462,6 +478,7 @@ def render_pagination(total_hits: int) -> None:
         )
         if int(selected_page) != st.session_state.page:
             st.session_state.page = int(selected_page)
+<<<<<<< ours
             safe_rerun()
     with c3:
         st.markdown(f"<div class='kpi-note'>Toplam sayfa: <b>{total_pages}</b></div>", unsafe_allow_html=True)
@@ -471,8 +488,13 @@ def render_pagination(total_hits: int) -> None:
 =======
         if st.button("Sonraki ▶", disabled=st.session_state.page >= total_pages, use_container_width=True):
 >>>>>>> theirs
+=======
+            st.rerun()
+    with pager_col3:
+        if st.button("Sonraki", disabled=st.session_state.page >= total_pages):
+>>>>>>> theirs
             st.session_state.page += 1
-            safe_rerun()
+            st.rerun()
 
 
 def render_card(item: Dict[str, Any], key_prefix: str) -> None:
