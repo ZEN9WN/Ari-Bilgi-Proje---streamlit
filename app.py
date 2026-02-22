@@ -296,12 +296,18 @@ def inject_custom_css(theme_mode: str) -> None:
           color: #e8f2ff !important;
           font-size: 0.92rem;
         }
-        .hero-link {
-          text-decoration: none !important;
-          display: block;
+        .hero-sticky {
           position: sticky;
           top: 8px;
           z-index: 50;
+        }
+        .hero-title-link {
+          color: #ffffff !important;
+          text-decoration: none !important;
+        }
+        .hero-sub-link {
+          color: #e8f2ff !important;
+          text-decoration: none !important;
         }
 
         .filter-wrap {
@@ -555,9 +561,6 @@ def toggle_theme() -> None:
 
 def set_page(page: int) -> None:
     st.session_state.page = int(page)
-    for key in ("top_page", "bottom_page"):
-        if key in st.session_state:
-            st.session_state[key] = int(page)
 
 
 def slugify_tags(tags: str) -> str:
@@ -686,12 +689,12 @@ def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
 def render_hero() -> None:
     st.markdown(
         f"""
-        <a class="hero-link" href="#top">
+        <div class="hero-sticky">
           <div class="hero">
-              <h1>{t("hero_title")}</h1>
-              <p>{t("hero_subtitle")}</p>
+              <h1><a class="hero-title-link" href="#top">{t("hero_title")}</a></h1>
+              <p><a class="hero-sub-link" href="#top">{t("hero_subtitle")}</a></p>
           </div>
-        </a>
+        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -832,9 +835,6 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
 
 def render_pagination(total_hits: int, key_prefix: str) -> None:
     total_pages = max(1, min(math.ceil(total_hits / st.session_state.per_page), 500))
-    page_key = f"{key_prefix}_page"
-    if page_key not in st.session_state:
-        st.session_state[page_key] = st.session_state.page
 
     p1, p2, p3 = st.columns([1, 1.2, 1])
     with p1:
@@ -844,10 +844,9 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
     with p2:
         selected_page = st.number_input(
             t("page"),
-            key=page_key,
             min_value=1,
             max_value=total_pages,
-            value=int(st.session_state[page_key]),
+            value=int(st.session_state.page),
             step=1,
             label_visibility="collapsed",
         )
@@ -930,10 +929,13 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
 
 
 def render_results(hits: List[Dict[str, Any]]) -> None:
-    cols = st.columns(st.session_state.columns)
-    for i, item in enumerate(hits):
-        with cols[i % st.session_state.columns]:
-            render_card(item, key_prefix=f"card_{i}")
+    col_count = st.session_state.columns
+    for start in range(0, len(hits), col_count):
+        row_items = hits[start : start + col_count]
+        row_cols = st.columns(col_count)
+        for idx, item in enumerate(row_items):
+            with row_cols[idx]:
+                render_card(item, key_prefix=f"card_{start + idx}")
 
 
 def main() -> None:
@@ -987,6 +989,7 @@ def main() -> None:
     st.markdown(f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True)
     render_summary(total_hits=total_hits, hits=hits)
     render_pagination(total_hits, key_prefix="bottom")
+    st.markdown(f"<a class='scroll-top-link' href='#top'>{t('back_top')}</a>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
