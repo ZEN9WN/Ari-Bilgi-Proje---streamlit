@@ -110,6 +110,8 @@ I18N: Dict[str, Dict[str, str]] = {
         "resolution": "Çözünürlük",
         "fullscreen_open": "Tam Ekran Aç",
         "save_device": "Cihaza Kaydet",
+        "prepare_download": "İndirmeyi Hazırla",
+        "preparing_download": "İndirme hazırlanıyor...",
         "search_empty": "Lütfen arama kelimesi girin.",
         "loading": "Pixabay sonuçları getiriliyor...",
         "no_results": "Sonuç bulunamadı. Farklı kelime veya filtre deneyin.",
@@ -159,6 +161,8 @@ I18N: Dict[str, Dict[str, str]] = {
         "resolution": "Resolution",
         "fullscreen_open": "Open Fullscreen",
         "save_device": "Save to Device",
+        "prepare_download": "Prepare Download",
+        "preparing_download": "Preparing download...",
         "search_empty": "Please enter a search term.",
         "loading": "Fetching results from Pixabay...",
         "no_results": "No results found. Try another keyword or filter.",
@@ -543,6 +547,7 @@ def init_state() -> None:
         "page": 1,
         "_clear_search_input": False,
         "_request_reset": False,
+        "_prepared_downloads": {},
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -563,6 +568,7 @@ def reset_all() -> None:
     set_page(1)
     st.session_state.search_active = False
     st.session_state._clear_search_input = True
+    st.session_state._prepared_downloads = {}
     reset_filters()
 
 
@@ -574,6 +580,7 @@ def toggle_theme() -> None:
 
 def set_page(page: int) -> None:
     st.session_state.page = int(page)
+    st.session_state._prepared_downloads = {}
 
 
 def slugify_tags(tags: str) -> str:
@@ -757,6 +764,7 @@ def run_search(reset_page: bool) -> None:
 
     st.session_state.search_query = query
     st.session_state.search_active = True
+    st.session_state._prepared_downloads = {}
     if reset_page:
         set_page(1)
 
@@ -957,19 +965,45 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
 
         with a2:
             if image_url:
-                try:
-                    image_bytes = fetch_image_bytes(image_url)
-                    st.download_button(
+                prepared_downloads = st.session_state.setdefault(
+                    "_prepared_downloads", {}
+                )
+                prepared_key = str(image_id)
+                prepared = prepared_downloads.get(prepared_key)
+
+                button_slot = st.empty()
+                if not prepared:
+                    if button_slot.button(
+                        t("prepare_download"),
+                        key=f"{key_prefix}_prepare_{image_id}",
+                        use_container_width=True,
+                    ):
+                        try:
+                            with st.spinner(t("preparing_download")):
+                                image_bytes = fetch_image_bytes(str(image_url))
+                            prepared_downloads[prepared_key] = {
+                                "bytes": image_bytes,
+                                "file_name": filename_for_item(
+                                    image_id=image_id, tags=tags
+                                ),
+                                "url": str(image_url),
+                            }
+                            prepared = prepared_downloads[prepared_key]
+                        except RuntimeError as exc:
+                            st.caption(str(exc))
+                elif prepared.get("url") != str(image_url):
+                    prepared_downloads.pop(prepared_key, None)
+                    prepared = None
+
+                if prepared:
+                    button_slot.download_button(
                         t("save_device"),
-                        data=image_bytes,
-                        file_name=filename_for_item(image_id=image_id, tags=tags),
+                        data=prepared["bytes"],
+                        file_name=prepared["file_name"],
                         mime="image/jpeg",
                         key=f"{key_prefix}_download_{image_id}",
                         use_container_width=True,
                     )
-                except RuntimeError as exc:
-                    st.button(t("save_device"), disabled=True, use_container_width=True)
-                    st.caption(str(exc))
             else:
                 st.button(t("save_device"), disabled=True, use_container_width=True)
 

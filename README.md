@@ -9,6 +9,7 @@ Arayuz Turkce/English dil secimi, acik/koyu tema ve gelistirilmis kart yapisi il
 - Acik / Koyu tema (varsayilan: koyu tema)
 - Grid gorunum + ust/alt sayfalama
 - Cihaza indirme (`download_button`)
+- Indirme optimizasyonu: kartlar ilk acilista tum gorselleri indirmez; once `Indirmeyi Hazirla`, sonra `Cihaza Kaydet`
 - API cagri cache (`st.cache_data`)
 - Demo fallback API key destegi (uyari ile)
 - API hata UX: `st.error` + cozum onerileri
@@ -73,6 +74,11 @@ API hatalarinda uygulama `st.error` ile hata mesaji ve ek olarak **Cozum onerisi
 - Rate limit dolmus olabilir mi?
 - Filtreler cok kisitlayici mi?
 - Baglanti/Cloud log kontrolu
+
+## Performans Notu (Indirme)
+`download_button` verisi render sirasinda gerektirdigi icin tum kartlarda aninda byte cekmek ilk yukleme maliyetini artirir. Bu projede bunun yerine 2 adimli akis kullanilir:
+- `Indirmeyi Hazirla` butonuna basildiginda ilgili gorselin bytes verisi cekilir
+- Sonrasinda `Cihaza Kaydet` butonu aktif olur
 
 ## Guvenlik Notu
 Gercek bir projede API key dosya/repo icine konmaz. `st.secrets` veya environment variable (`PIXABAY_KEY`) kullanilmalidir. Kod icindeki fallback key sadece demo/odev kolayligi icin dusunulmelidir; paylasimli key oldugu icin kotaya takilma riski vardir.
