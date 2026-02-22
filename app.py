@@ -554,7 +554,9 @@ def reset_all() -> None:
 
 
 def toggle_theme() -> None:
-    st.session_state.theme_mode = "dark" if st.session_state.theme_mode == "light" else "light"
+    st.session_state.theme_mode = (
+        "dark" if st.session_state.theme_mode == "light" else "light"
+    )
 
 
 def set_page(page: int) -> None:
@@ -649,7 +651,9 @@ def search_pixabay(
     if response.status_code != 200:
         api_error = payload.get("error", "") if isinstance(payload, dict) else ""
         if response.status_code == 429:
-            raise RuntimeError("Pixabay API limitine ulaşıldı (HTTP 429). Birkaç dakika sonra tekrar deneyin.")
+            raise RuntimeError(
+                "Pixabay API limitine ulaşıldı (HTTP 429). Birkaç dakika sonra tekrar deneyin."
+            )
         if response.status_code == 400 and api_error:
             raise RuntimeError(f"Pixabay API hatası (HTTP 400): {api_error}")
         raise RuntimeError(f"Pixabay API HTTP hatası: {response.status_code}")
@@ -677,7 +681,9 @@ def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
     file_path = download_dir / filename_for_item(image_id=image_id, tags=tags)
     counter = 1
     while file_path.exists():
-        file_path = download_dir / f"pixabay_{image_id}_{slugify_tags(tags)}_{counter}.jpg"
+        file_path = (
+            download_dir / f"pixabay_{image_id}_{slugify_tags(tags)}_{counter}.jpg"
+        )
         counter += 1
 
     file_path.write_bytes(data)
@@ -701,7 +707,10 @@ def render_hero() -> None:
 def render_top_controls() -> None:
     c1, c2, c3 = st.columns([6, 2, 2])
     with c2:
-        st.markdown(f"<div class='top-control-label'>{t('language')}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='top-control-label'>{t('language')}</div>",
+            unsafe_allow_html=True,
+        )
         selected_lang = st.selectbox(
             "Language",
             options=LANG_OPTIONS,
@@ -713,8 +722,14 @@ def render_top_controls() -> None:
             st.session_state.search_lang = selected_lang
             safe_rerun()
     with c3:
-        st.markdown(f"<div class='top-control-label'>{t('theme')}</div>", unsafe_allow_html=True)
-        label = t("theme_dark") if st.session_state.theme_mode == "light" else t("theme_light")
+        st.markdown(
+            f"<div class='top-control-label'>{t('theme')}</div>", unsafe_allow_html=True
+        )
+        label = (
+            t("theme_dark")
+            if st.session_state.theme_mode == "light"
+            else t("theme_light")
+        )
         if st.button(label, key="theme_toggle_btn", use_container_width=True):
             toggle_theme()
             safe_rerun()
@@ -738,7 +753,9 @@ def on_search_enter() -> None:
 
 
 def render_search_section() -> None:
-    st.markdown(f"<div class='section-title'>{t('search_header')}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='section-title'>{t('search_header')}</div>", unsafe_allow_html=True
+    )
 
     if st.session_state._request_reset:
         reset_all()
@@ -765,7 +782,9 @@ def render_search_section() -> None:
     with st.expander(t("filters"), expanded=True):
         row1 = st.columns(4)
         with row1[0]:
-            st.selectbox(t("image_type"), IMAGE_TYPES, key="image_type", format_func=option_label)
+            st.selectbox(
+                t("image_type"), IMAGE_TYPES, key="image_type", format_func=option_label
+            )
         with row1[1]:
             st.selectbox(
                 t("category"),
@@ -812,7 +831,10 @@ def render_search_section() -> None:
 
 
 def render_showcase() -> None:
-    st.markdown(f"<div class='section-title'>{t('showcase_title')}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='section-title'>{t('showcase_title')}</div>",
+        unsafe_allow_html=True,
+    )
     st.caption(t("showcase_caption"))
 
     cols = st.columns(4)
@@ -876,7 +898,9 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
     width = item.get("imageWidth", "?")
     height = item.get("imageHeight", "?")
 
-    preview_url = item.get("webformatURL") or item.get("previewURL") or item.get("largeImageURL")
+    preview_url = (
+        item.get("webformatURL") or item.get("previewURL") or item.get("largeImageURL")
+    )
     image_url = item.get("largeImageURL") or item.get("webformatURL")
 
     with st.container(border=True):
@@ -885,9 +909,13 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         else:
             st.info(t("preview_missing"))
 
-        st.markdown(f"<div class='card-label'>{t('tags')}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='card-label'>{t('tags')}</div>", unsafe_allow_html=True
+        )
         st.markdown(f"<div class='card-value'>{tags}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='card-label'>{t('user')}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='card-label'>{t('user')}</div>", unsafe_allow_html=True
+        )
         st.markdown(f"<div class='card-value'>{user}</div>", unsafe_allow_html=True)
 
         st.markdown(
@@ -906,7 +934,9 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
         with a1:
             if image_url:
                 if hasattr(st, "link_button"):
-                    st.link_button(t("fullscreen_open"), url=image_url, use_container_width=True)
+                    st.link_button(
+                        t("fullscreen_open"), url=image_url, use_container_width=True
+                    )
                 else:
                     st.markdown(f"[{t('fullscreen_open')}]({image_url})")
             else:
@@ -989,10 +1019,15 @@ def main() -> None:
 
     render_results(hits)
     st.markdown("---")
-    st.markdown(f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True
+    )
     render_summary(total_hits=total_hits, hits=hits)
     render_pagination(total_hits, key_prefix="bottom")
-    st.markdown(f"<a class='scroll-top-link' href='#top'>{t('back_top')}</a>", unsafe_allow_html=True)
+    st.markdown(
+        f"<a class='scroll-top-link' href='#top'>{t('back_top')}</a>",
+        unsafe_allow_html=True,
+    )
 
 
 if __name__ == "__main__":
