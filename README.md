@@ -7,7 +7,7 @@ Arayuz Turkce/English dil secimi, acik/koyu tema ve gelistirilmis kart yapisi il
 - Pixabay API entegrasyonu (arama + filtreler)
 - Turkce / English arayuz (menu ve filtre etiketleri dile gore degisir)
 - Acik / Koyu tema (varsayilan: koyu tema)
-- Grid gorunum + ust/alt sayfalama
+- Grid gorunum + alt sayfalama
 - Cihaza indirme (`download_button`)
 - Indirme optimizasyonu: kartlar ilk acilista tum gorselleri indirmez; once `Indirmeyi Hazirla`, sonra `Cihaza Kaydet`
 - API cagri cache (`st.cache_data`)
@@ -34,6 +34,10 @@ PIXABAY_KEY = "YOUR_PIXABAY_API_KEY"
 ```bash
 export PIXABAY_KEY="YOUR_PIXABAY_API_KEY"
 ```
+
+## Streamlit Cloud Deployment Notu
+- Streamlit Cloud'da API key eklemek icin: `App > Settings > Secrets`
+- `PIXABAY_KEY = "YOUR_PIXABAY_API_KEY"` degerini Secrets alanina ekleyin (demo key ile rate limit riski vardir)
 
 ## Demo Key (Fallback) Notu
 Uygulama, `PIXABAY_KEY` bulunamazsa demo fallback key ile calisabilir. Bu key paylasimli oldugu icin **rate limit** nedeniyle aramalar zaman zaman yavaslayabilir veya `HTTP 429` hatasi alinabilir. Uygulama bu durumda ekranda `st.warning` ile demo key uyarisi gosterir.
@@ -94,8 +98,8 @@ UI seviyesinde sinirlar:
 ## UI Notlari (Son Hali)
 - Ustte sticky header + tema/dil kontrolleri
 - Arama kutusu + filtre paneli (Pixabay tarzinda)
-- Sonuc ekraninda once gorsel grid, sonra `Summary + Pagination`
-- En altta tekrar pagination ve `Basa Don` linki
+- Sonuc akisi (tek dogru siralama): once gorsel grid, sonra `Summary + Pagination`
+- En altta `Basa Don` linki
 - Header basligi dil secimine gore degisir:
   - TR: `Pixabay Gorsel Arama`
   - EN: `Pixabay Visual Search`

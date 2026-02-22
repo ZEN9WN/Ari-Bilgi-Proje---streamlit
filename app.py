@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 import os
 import re
-from pathlib import Path
 from typing import Any, Dict, List
 
 import requests
@@ -593,16 +592,6 @@ def filename_for_item(image_id: int, tags: str) -> str:
     return f"pixabay_{image_id}_{slugify_tags(tags)}.jpg"
 
 
-def get_download_dir() -> Path:
-    for candidate in [Path("downloads"), Path("/tmp/downloads")]:
-        try:
-            candidate.mkdir(parents=True, exist_ok=True)
-            return candidate
-        except OSError:
-            continue
-    raise RuntimeError("İndirme klasörü oluşturulamadı. Yazma izinlerini kontrol edin.")
-
-
 def build_params(
     query: str,
     lang: str,
@@ -713,22 +702,6 @@ def render_api_error(error: RuntimeError) -> None:
             "- Filtreleri azaltıp tekrar deneyin.\n"
             "- Bağlantıyı veya Streamlit Cloud loglarını kontrol edin."
         )
-
-
-def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
-    data = fetch_image_bytes(image_url)
-    download_dir = get_download_dir()
-
-    file_path = download_dir / filename_for_item(image_id=image_id, tags=tags)
-    counter = 1
-    while file_path.exists():
-        file_path = (
-            download_dir / f"pixabay_{image_id}_{slugify_tags(tags)}_{counter}.jpg"
-        )
-        counter += 1
-
-    file_path.write_bytes(data)
-    return file_path
 
 
 def render_hero() -> None:
@@ -1011,7 +984,7 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
                             }
                             prepared = prepared_downloads[prepared_key]
                         except RuntimeError as exc:
-                            st.caption(str(exc))
+                            st.warning(str(exc))
                 elif prepared.get("url") != str(image_url):
                     prepared_downloads.pop(prepared_key, None)
                     prepared = None
