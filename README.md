@@ -1,15 +1,19 @@
 # Pixabay API ile Streamlit Gorsel Arama ve Indirme
 
 Pixabay API kullanarak gorsel arama, filtreleme, sayfalama ve indirme yapan Streamlit uygulamasi.
+Arayuz Turkce/English dil secimi, acik/koyu tema ve gelistirilmis kart yapisi ile calisir.
 
 ## Ozellikler
 - Pixabay API entegrasyonu (arama + filtreler)
-- Turkce / English arayuz
-- Acik / Koyu tema
-- Grid gorunum ve sayfalama
+- Turkce / English arayuz (menu ve filtre etiketleri dile gore degisir)
+- Acik / Koyu tema (varsayilan: koyu tema)
+- Grid gorunum + ust/alt sayfalama
 - Cihaza indirme (`download_button`)
+- Indirme optimizasyonu: kartlar ilk acilista tum gorselleri indirmez, once `Indirmeyi Hazirla` sonra `Cihaza Kaydet`
 - API cagri cache (`st.cache_data`)
 - Demo fallback API key destegi (uyari ile)
+- API hata UX: `st.error` + cozum onerileri
+- Enter ile arama + buton ile arama
 
 ## Kurulum
 ```bash
@@ -32,12 +36,17 @@ export PIXABAY_KEY="YOUR_PIXABAY_API_KEY"
 ```
 
 ## Demo Key (Fallback) Notu
-Uygulama, `PIXABAY_KEY` bulunamazsa demo fallback key ile calisabilir. Bu key paylasimli oldugu icin **rate limit** nedeniyle aramalar zaman zaman yavaslayabilir veya `HTTP 429` hatasi alinabilir.
+Uygulama, `PIXABAY_KEY` bulunamazsa demo fallback key ile calisabilir. Bu key paylasimli oldugu icin **rate limit** nedeniyle aramalar zaman zaman yavaslayabilir veya `HTTP 429` hatasi alinabilir. Uygulama bu durumda ekranda `st.warning` ile demo key uyarisi gosterir.
 
 ## Calistirma
 ```bash
 streamlit run app.py
 ```
+
+Uygulama acildiginda:
+- Varsayilan tema `Koyu Tema` olarak gelir
+- Dil secimi `Turkce` olarak baslar
+- Arama yapilmadan once ornek gorseller gosterilir
 
 ### Ornek komutlar
 ```bash
@@ -75,6 +84,17 @@ Pixabay tarafinda derin sayfalama pratikte sinirlidir. Bu nedenle uygulamada `pa
 Ek validasyonlar:
 - `per_page` sadece desteklenen degerlerden biri olur (`20`, `30`, `50`)
 - `page` negatif/0 girilirse `1` olarak duzeltilir
+- `page` gecersiz/buyuk bir degerse `500` sinirina cekilir
+- Sayfa gecisleri `Onceki / Sonraki` butonlari ve ortadaki sayfa inputu ile yapilabilir
+
+## UI Notlari (Son Hali)
+- Ustte sticky header + tema/dil kontrolleri
+- Arama kutusu + filtre paneli (Pixabay tarzinda)
+- Sonuc ekraninda once `Summary + Pagination`, sonra gorsel grid
+- En altta tekrar pagination ve `Basa Don` linki
+- Header basligi dil secimine gore degisir:
+  - TR: `Pixabay Gorsel Arama`
+  - EN: `Pixabay Visual Search`
 
 ## Manual Test Ornekleri
 Asagidaki mini testleri `python3` REPL veya gecici script ile deneyebilirsiniz.
@@ -109,4 +129,3 @@ print(params["page"], params["per_page"], params["category"], params["colors"])
 
 ## Kod Kalitesi / Format
 Kod `black` ile format kontrolunden gecirildi (`python3 -m black app.py`).
-
