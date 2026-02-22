@@ -733,6 +733,10 @@ def run_search(reset_page: bool) -> None:
         set_page(1)
 
 
+def on_search_enter() -> None:
+    run_search(reset_page=True)
+
+
 def render_search_section() -> None:
     st.markdown(f"<div class='section-title'>{t('search_header')}</div>", unsafe_allow_html=True)
 
@@ -744,18 +748,17 @@ def render_search_section() -> None:
         st.session_state.search_query_input = ""
         st.session_state._clear_search_input = False
 
-    with st.form("search_form_main", clear_on_submit=False):
-        q_col, b_col = st.columns([7, 1.6])
-        with q_col:
-            st.text_input(
-                t("search_input"),
-                key="search_query_input",
-                placeholder=t("search_placeholder"),
-                label_visibility="collapsed",
-            )
-        with b_col:
-            submitted = st.form_submit_button(t("search_btn"), type="primary", use_container_width=True)
-        if submitted:
+    q_col, b_col = st.columns([7, 1.6])
+    with q_col:
+        st.text_input(
+            t("search_input"),
+            key="search_query_input",
+            placeholder=t("search_placeholder"),
+            label_visibility="collapsed",
+            on_change=on_search_enter,
+        )
+    with b_col:
+        if st.button(t("search_btn"), type="primary", use_container_width=True):
             run_search(reset_page=True)
 
     st.markdown("<div class='filter-wrap'>", unsafe_allow_html=True)
