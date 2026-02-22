@@ -8,8 +8,8 @@ Arayuz Turkce/English dil secimi, acik/koyu tema ve gelistirilmis kart yapisi il
 - Turkce / English arayuz (menu ve filtre etiketleri dile gore degisir)
 - Acik / Koyu tema (varsayilan: koyu tema)
 - Grid gorunum + alt sayfalama
-- Cihaza indirme (tek tik, tarayici indirme tetikleme)
-- Indirme optimizasyonu: gorsel bytes verisi kart renderinda degil, `Cihaza Kaydet` tiklandiginda cekilir
+- Cihaza indirme (`Cihaza Kaydet` butonu)
+- Tek tik indirme: `Cihaza Kaydet` butonu `download_button` ile dogrudan indirme sunar
 - API cagri cache (`st.cache_data`)
 - Demo fallback API key destegi (uyari ile)
 - API hata UX: `st.error` + cozum onerileri
@@ -80,7 +80,7 @@ API hatalarinda uygulama `st.error` ile hata mesaji ve ek olarak **Cozum onerisi
 - Baglanti/Cloud log kontrolu
 
 ## Performans Notu (Indirme)
-Gorsel bytes verisi kartlar render edilirken topluca cekilmez. `Cihaza Kaydet` butonuna tiklandiginda ilgili gorsel fetch edilir ve tarayicida indirme tetiklenir. Bu sayede ilk yukleme daha hafif kalir.
+Bu surumde tek tik indirme icin `download_button` kullanilir. `download_button` veriyi render sirasinda istedigi icin sayfadaki kartlar icin gorsel bytes fetch islemleri yapilabilir. Buna ragmen akisin stabil ve kullanici dostu olmasi icin bu tercih edilmistir. Tekrar renderlarda `st.cache_data` yardimci olur.
 
 ## Guvenlik Notu
 Gercek bir projede API key dosya/repo icine konmaz. `st.secrets` veya environment variable (`PIXABAY_KEY`) kullanilmalidir. Kod icindeki fallback key sadece demo/odev kolayligi icin dusunulmelidir; paylasimli key oldugu icin kotaya takilma riski vardir.

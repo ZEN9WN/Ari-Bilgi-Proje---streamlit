@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import base64
-import json
 import math
 import os
 import re
@@ -9,7 +7,6 @@ from typing import Any, Dict, List
 
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 
 API_URL = "https://pixabay.com/api/"
 DEFAULT_API_KEY = "49738243-e25f3b714305e2a1c2cd97721"
@@ -702,22 +699,6 @@ def render_api_error(error: RuntimeError) -> None:
         )
 
 
-def trigger_browser_download(file_bytes: bytes, file_name: str, mime: str = "image/jpeg") -> None:
-    """Trigger browser download from fetched bytes using a tiny HTML component."""
-    encoded = base64.b64encode(file_bytes).decode("ascii")
-    html = f"""
-    <script>
-      const a = document.createElement("a");
-      a.href = "data:" + {json.dumps(mime)} + ";base64,{encoded}";
-      a.download = {json.dumps(file_name)};
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    </script>
-    """
-    components.html(html, height=0, width=0)
-
-
 def render_hero() -> None:
     st.markdown(
         f"""
@@ -972,21 +953,19 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
 
         with a2:
             if image_url:
-                if st.button(
-                    t("save_device"),
-                    key=f"{key_prefix}_download_auto_{image_id}",
-                    use_container_width=True,
-                ):
-                    try:
-                        with st.spinner(t("preparing_download")):
-                            image_bytes = fetch_image_bytes(str(image_url))
-                        trigger_browser_download(
-                            file_bytes=image_bytes,
-                            file_name=filename_for_item(image_id=image_id, tags=tags),
-                            mime="image/jpeg",
-                        )
-                    except RuntimeError as exc:
-                        st.warning(str(exc))
+                try:
+                    image_bytes = fetch_image_bytes(str(image_url))
+                    st.download_button(
+                        t("save_device"),
+                        data=image_bytes,
+                        file_name=filename_for_item(image_id=image_id, tags=tags),
+                        mime="image/jpeg",
+                        key=f"{key_prefix}_download_{image_id}",
+                        use_container_width=True,
+                    )
+                except RuntimeError as exc:
+                    st.button(t("save_device"), disabled=True, use_container_width=True)
+                    st.warning(str(exc))
             else:
                 st.button(t("save_device"), disabled=True, use_container_width=True)
 
