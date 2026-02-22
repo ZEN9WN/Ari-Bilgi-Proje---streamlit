@@ -694,6 +694,27 @@ def fetch_image_bytes(image_url: str) -> bytes:
     return response.content
 
 
+def render_api_error(error: RuntimeError) -> None:
+    """Show API error and troubleshooting tips."""
+    st.error(str(error))
+    if current_lang() == "en":
+        st.markdown(
+            "**Suggested fixes**\n"
+            "- Is `PIXABAY_KEY` set correctly?\n"
+            "- You may have hit the rate limit (especially with demo key).\n"
+            "- Try fewer/looser filters.\n"
+            "- Check connection or Streamlit Cloud logs."
+        )
+    else:
+        st.markdown(
+            "**Çözüm önerisi**\n"
+            "- `PIXABAY_KEY` doğru ayarlı mı kontrol edin.\n"
+            "- Rate limit dolmuş olabilir (özellikle demo key ile).\n"
+            "- Filtreleri azaltıp tekrar deneyin.\n"
+            "- Bağlantıyı veya Streamlit Cloud loglarını kontrol edin."
+        )
+
+
 def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
     data = fetch_image_bytes(image_url)
     download_dir = get_download_dir()
@@ -1054,7 +1075,7 @@ def main() -> None:
                 per_page=st.session_state.per_page,
             )
         except RuntimeError as exc:
-            st.error(str(exc))
+            render_api_error(exc)
             render_showcase()
             return
 
