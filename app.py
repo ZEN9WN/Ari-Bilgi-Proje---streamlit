@@ -299,6 +299,9 @@ def inject_custom_css(theme_mode: str) -> None:
         .hero-link {
           text-decoration: none !important;
           display: block;
+          position: sticky;
+          top: 8px;
+          z-index: 50;
         }
 
         .filter-wrap {
@@ -344,6 +347,11 @@ def inject_custom_css(theme_mode: str) -> None:
         [data-testid="stMetricLabel"] p,
         [data-testid="stMetricValue"] {
           color: __TEXT_PRIMARY__ !important;
+        }
+        [data-testid="stAlert"] [data-testid="stMarkdownContainer"] p,
+        [data-testid="stAlert"] [data-testid="stMarkdownContainer"] span {
+          color: __TEXT_PRIMARY__ !important;
+          font-weight: 700 !important;
         }
 
         [data-testid="stTextInput"] input,
@@ -535,7 +543,7 @@ def reset_filters() -> None:
 
 def reset_all() -> None:
     st.session_state.search_query = ""
-    st.session_state.page = 1
+    set_page(1)
     st.session_state.search_active = False
     st.session_state._clear_search_input = True
     reset_filters()
@@ -543,6 +551,13 @@ def reset_all() -> None:
 
 def toggle_theme() -> None:
     st.session_state.theme_mode = "dark" if st.session_state.theme_mode == "light" else "light"
+
+
+def set_page(page: int) -> None:
+    st.session_state.page = int(page)
+    for key in ("top_page", "bottom_page"):
+        if key in st.session_state:
+            st.session_state[key] = int(page)
 
 
 def slugify_tags(tags: str) -> str:
@@ -714,7 +729,7 @@ def run_search(reset_page: bool) -> None:
     st.session_state.search_query = query
     st.session_state.search_active = True
     if reset_page:
-        st.session_state.page = 1
+        set_page(1)
 
 
 def render_search_section() -> None:
@@ -818,13 +833,13 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
 def render_pagination(total_hits: int, key_prefix: str) -> None:
     total_pages = max(1, min(math.ceil(total_hits / st.session_state.per_page), 500))
     page_key = f"{key_prefix}_page"
-    if st.session_state.get(page_key) != st.session_state.page:
+    if page_key not in st.session_state:
         st.session_state[page_key] = st.session_state.page
 
     p1, p2, p3 = st.columns([1, 1.2, 1])
     with p1:
         if st.button(t("prev"), key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
-            st.session_state.page -= 1
+            set_page(max(1, st.session_state.page - 1))
             safe_rerun()
     with p2:
         selected_page = st.number_input(
@@ -832,12 +847,12 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
             key=page_key,
             min_value=1,
             max_value=total_pages,
-            value=st.session_state.page,
+            value=int(st.session_state[page_key]),
             step=1,
             label_visibility="collapsed",
         )
         if int(selected_page) != st.session_state.page:
-            st.session_state.page = int(selected_page)
+            set_page(int(selected_page))
             safe_rerun()
         st.markdown(
             f"<div class='page-center'>{t('page')}: {st.session_state.page} | {t('total_pages')}: {total_pages}</div>",
@@ -845,7 +860,7 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
         )
     with p3:
         if st.button(t("next"), key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
-            st.session_state.page += 1
+            set_page(min(total_pages, st.session_state.page + 1))
             safe_rerun()
 
 
