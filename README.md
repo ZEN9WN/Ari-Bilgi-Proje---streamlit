@@ -9,7 +9,6 @@ Arayuz Turkce/English dil secimi, acik/koyu tema ve gelistirilmis kart yapisi il
 - Acik / Koyu tema (varsayilan: koyu tema)
 - Grid gorunum + ust/alt sayfalama
 - Cihaza indirme (`download_button`)
-- Indirme optimizasyonu: kartlar ilk acilista tum gorselleri indirmez, once `Indirmeyi Hazirla` sonra `Cihaza Kaydet`
 - API cagri cache (`st.cache_data`)
 - Demo fallback API key destegi (uyari ile)
 - API hata UX: `st.error` + cozum onerileri
@@ -24,7 +23,7 @@ pip install -r requirements.txt
 
 ## PIXABAY_KEY Ayari (Onerilen)
 ### 1) Streamlit secrets (onerilen)
-Proje klasorunde `/Users/emirzengin/Documents/New project/.streamlit/secrets.toml` olusturun:
+Proje klasorunde `.streamlit/secrets.toml` olusturun:
 
 ```toml
 PIXABAY_KEY = "YOUR_PIXABAY_API_KEY"
@@ -79,18 +78,17 @@ API hatalarinda uygulama `st.error` ile hata mesaji ve ek olarak **Cozum onerisi
 Gercek bir projede API key dosya/repo icine konmaz. `st.secrets` veya environment variable (`PIXABAY_KEY`) kullanilmalidir. Kod icindeki fallback key sadece demo/odev kolayligi icin dusunulmelidir; paylasimli key oldugu icin kotaya takilma riski vardir.
 
 ## Pagination / Limit Notu
-Pixabay tarafinda derin sayfalama pratikte sinirlidir. Bu nedenle uygulamada `page` degeri `1..500` araligina clamp edilir ve UI'da da toplam sayfa sayisi **500** ile sinirlanir.
+Pixabay tarafinda derin sayfalama pratikte sinirlidir. Bu nedenle UI'da toplam sayfa sayisi **500** ile sinirlanir.
 
-Ek validasyonlar:
-- `per_page` sadece desteklenen degerlerden biri olur (`20`, `30`, `50`)
-- `page` negatif/0 girilirse `1` olarak duzeltilir
-- `page` gecersiz/buyuk bir degerse `500` sinirina cekilir
+UI seviyesinde sinirlar:
+- `per_page` secimi sadece desteklenen degerlerden yapilir (`20`, `30`, `50`)
 - Sayfa gecisleri `Onceki / Sonraki` butonlari ve ortadaki sayfa inputu ile yapilabilir
+- Sayfa inputunda min/max degeri mevcut toplam sayfaya gore sinirlanir
 
 ## UI Notlari (Son Hali)
 - Ustte sticky header + tema/dil kontrolleri
 - Arama kutusu + filtre paneli (Pixabay tarzinda)
-- Sonuc ekraninda once `Summary + Pagination`, sonra gorsel grid
+- Sonuc ekraninda once gorsel grid, sonra `Summary + Pagination`
 - En altta tekrar pagination ve `Basa Don` linki
 - Header basligi dil secimine gore degisir:
   - TR: `Pixabay Gorsel Arama`
@@ -120,11 +118,11 @@ params = build_params(
     orientation="horizontal",
     color="blue",
     safesearch=True,
-    page=999,   # clamp -> 500
-    per_page=999,  # fallback -> 20
+    page=2,
+    per_page=20,
 )
 print(params["page"], params["per_page"], params["category"], params["colors"])
-# Beklenen: 500 20 travel blue
+# Beklenen: 2 20 travel blue
 ```
 
 ## Kod Kalitesi / Format

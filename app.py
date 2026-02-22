@@ -116,6 +116,7 @@ I18N: Dict[str, Dict[str, str]] = {
         "results_title": "Sonuçlar",
         "saved_prefix": "Kaydedildi",
         "back_top": "⬆ Üste Dön",
+        "demo_key_warning": "Demo API key kullanılıyor. Rate limit nedeniyle aramalar zaman zaman başarısız olabilir. Kendi `PIXABAY_KEY` değerini secrets/env ile eklemeniz önerilir.",
     },
     "en": {
         "hero_title": "Pixabay Visual Search",
@@ -164,6 +165,7 @@ I18N: Dict[str, Dict[str, str]] = {
         "results_title": "Results",
         "saved_prefix": "Saved",
         "back_top": "⬆ Back to Top",
+        "demo_key_warning": "Demo API key is active. Searches may fail intermittently due to rate limits. It is recommended to set your own `PIXABAY_KEY` via secrets/env.",
     },
 }
 
@@ -510,6 +512,17 @@ def get_pixabay_api_key() -> str:
         pass
 
     return DEFAULT_API_KEY
+
+
+def is_demo_key_in_use() -> bool:
+    """Return True when app falls back to the bundled demo API key."""
+    if os.getenv("PIXABAY_KEY", "").strip():
+        return False
+    try:
+        secret_key = str(st.secrets["PIXABAY_KEY"]).strip()
+        return not bool(secret_key)
+    except Exception:
+        return True
 
 
 def init_state() -> None:
@@ -985,6 +998,8 @@ def main() -> None:
     st.markdown("<a id='top'></a>", unsafe_allow_html=True)
     render_top_controls()
     render_hero()
+    if is_demo_key_in_use():
+        st.warning(t("demo_key_warning"))
     render_search_section()
 
     if not st.session_state.search_active:
