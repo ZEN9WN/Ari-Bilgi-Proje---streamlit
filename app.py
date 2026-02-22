@@ -282,7 +282,6 @@ def inject_custom_css(theme_mode: str) -> None:
           padding: 12px 20px;
           margin-bottom: 10px;
           box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
-          cursor: pointer;
         }
 
         .hero h1 {
@@ -300,14 +299,6 @@ def inject_custom_css(theme_mode: str) -> None:
           position: sticky;
           top: 8px;
           z-index: 50;
-        }
-        .hero-title-link {
-          color: #ffffff !important;
-          text-decoration: none !important;
-        }
-        .hero-sub-link {
-          color: #e8f2ff !important;
-          text-decoration: none !important;
         }
 
         .filter-wrap {
@@ -691,8 +682,8 @@ def render_hero() -> None:
         f"""
         <div class="hero-sticky">
           <div class="hero">
-              <h1><a class="hero-title-link" href="#top">{t("hero_title")}</a></h1>
-              <p><a class="hero-sub-link" href="#top">{t("hero_subtitle")}</a></p>
+              <h1>Pixabay Görsel Arama</h1>
+              <p>{t("hero_subtitle")}</p>
           </div>
         </div>
         """,
