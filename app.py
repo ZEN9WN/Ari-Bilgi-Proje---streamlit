@@ -430,6 +430,13 @@ def inject_custom_css(theme_mode: str) -> None:
           color: __BTN_TEXT__ !important;
           width: 100% !important;
         }
+        .stButton > button:disabled,
+        .stDownloadButton > button:disabled {
+          opacity: 1 !important;
+          background: __BTN_BG__ !important;
+          border: 1px solid __BTN_BORDER__ !important;
+          color: __BTN_TEXT__ !important;
+        }
 
         .stButton > button:hover,
         .stDownloadButton > button:hover,
@@ -682,7 +689,7 @@ def render_hero() -> None:
         f"""
         <div class="hero-sticky">
           <div class="hero">
-              <h1>Pixabay Görsel Arama</h1>
+              <h1>{t("hero_title")}</h1>
               <p>{t("hero_subtitle")}</p>
           </div>
         </div>
