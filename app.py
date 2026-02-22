@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import json
 import math
 import os
 import re
@@ -7,6 +9,7 @@ from typing import Any, Dict, List
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 API_URL = "https://pixabay.com/api/"
 DEFAULT_API_KEY = "49738243-e25f3b714305e2a1c2cd97721"
@@ -109,7 +112,6 @@ I18N: Dict[str, Dict[str, str]] = {
         "resolution": "Çözünürlük",
         "fullscreen_open": "Tam Ekran Aç",
         "save_device": "Cihaza Kaydet",
-        "prepare_download": "İndirmeyi Hazırla",
         "preparing_download": "İndirme hazırlanıyor...",
         "search_empty": "Lütfen arama kelimesi girin.",
         "loading": "Pixabay sonuçları getiriliyor...",
@@ -160,7 +162,6 @@ I18N: Dict[str, Dict[str, str]] = {
         "resolution": "Resolution",
         "fullscreen_open": "Open Fullscreen",
         "save_device": "Save to Device",
-        "prepare_download": "Prepare Download",
         "preparing_download": "Preparing download...",
         "search_empty": "Please enter a search term.",
         "loading": "Fetching results from Pixabay...",
@@ -546,7 +547,6 @@ def init_state() -> None:
         "page": 1,
         "_clear_search_input": False,
         "_request_reset": False,
-        "_prepared_downloads": {},
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -567,7 +567,6 @@ def reset_all() -> None:
     set_page(1)
     st.session_state.search_active = False
     st.session_state._clear_search_input = True
-    st.session_state._prepared_downloads = {}
     reset_filters()
 
 
@@ -579,7 +578,6 @@ def toggle_theme() -> None:
 
 def set_page(page: int) -> None:
     st.session_state.page = int(page)
-    st.session_state._prepared_downloads = {}
 
 
 def slugify_tags(tags: str) -> str:
@@ -704,6 +702,22 @@ def render_api_error(error: RuntimeError) -> None:
         )
 
 
+def trigger_browser_download(file_bytes: bytes, file_name: str, mime: str = "image/jpeg") -> None:
+    """Trigger browser download from fetched bytes using a tiny HTML component."""
+    encoded = base64.b64encode(file_bytes).decode("ascii")
+    html = f"""
+    <script>
+      const a = document.createElement("a");
+      a.href = "data:" + {json.dumps(mime)} + ";base64,{encoded}";
+      a.download = {json.dumps(file_name)};
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    </script>
+    """
+    components.html(html, height=0, width=0)
+
+
 def render_hero() -> None:
     st.markdown(
         f"""
@@ -758,7 +772,6 @@ def run_search(reset_page: bool) -> None:
 
     st.session_state.search_query = query
     st.session_state.search_active = True
-    st.session_state._prepared_downloads = {}
     if reset_page:
         set_page(1)
 
@@ -959,45 +972,21 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
 
         with a2:
             if image_url:
-                prepared_downloads = st.session_state.setdefault(
-                    "_prepared_downloads", {}
-                )
-                prepared_key = str(image_id)
-                prepared = prepared_downloads.get(prepared_key)
-
-                button_slot = st.empty()
-                if not prepared:
-                    if button_slot.button(
-                        t("prepare_download"),
-                        key=f"{key_prefix}_prepare_{image_id}",
-                        use_container_width=True,
-                    ):
-                        try:
-                            with st.spinner(t("preparing_download")):
-                                image_bytes = fetch_image_bytes(str(image_url))
-                            prepared_downloads[prepared_key] = {
-                                "bytes": image_bytes,
-                                "file_name": filename_for_item(
-                                    image_id=image_id, tags=tags
-                                ),
-                                "url": str(image_url),
-                            }
-                            prepared = prepared_downloads[prepared_key]
-                        except RuntimeError as exc:
-                            st.warning(str(exc))
-                elif prepared.get("url") != str(image_url):
-                    prepared_downloads.pop(prepared_key, None)
-                    prepared = None
-
-                if prepared:
-                    button_slot.download_button(
-                        t("save_device"),
-                        data=prepared["bytes"],
-                        file_name=prepared["file_name"],
-                        mime="image/jpeg",
-                        key=f"{key_prefix}_download_{image_id}",
-                        use_container_width=True,
-                    )
+                if st.button(
+                    t("save_device"),
+                    key=f"{key_prefix}_download_auto_{image_id}",
+                    use_container_width=True,
+                ):
+                    try:
+                        with st.spinner(t("preparing_download")):
+                            image_bytes = fetch_image_bytes(str(image_url))
+                        trigger_browser_download(
+                            file_bytes=image_bytes,
+                            file_name=filename_for_item(image_id=image_id, tags=tags),
+                            mime="image/jpeg",
+                        )
+                    except RuntimeError as exc:
+                        st.warning(str(exc))
             else:
                 st.button(t("save_device"), disabled=True, use_container_width=True)
 
