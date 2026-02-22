@@ -836,9 +836,10 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
 
     p1, p2, p3 = st.columns([1, 1.2, 1])
     with p1:
-        if st.button(t("prev"), key=f"{key_prefix}_prev", disabled=st.session_state.page <= 1, use_container_width=True):
-            set_page(max(1, st.session_state.page - 1))
-            safe_rerun()
+        if st.button(t("prev"), key=f"{key_prefix}_prev", use_container_width=True):
+            if st.session_state.page > 1:
+                set_page(st.session_state.page - 1)
+                safe_rerun()
     with p2:
         selected_page = st.number_input(
             t("page"),
@@ -856,9 +857,10 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
             unsafe_allow_html=True,
         )
     with p3:
-        if st.button(t("next"), key=f"{key_prefix}_next", disabled=st.session_state.page >= total_pages, use_container_width=True):
-            set_page(min(total_pages, st.session_state.page + 1))
-            safe_rerun()
+        if st.button(t("next"), key=f"{key_prefix}_next", use_container_width=True):
+            if st.session_state.page < total_pages:
+                set_page(st.session_state.page + 1)
+                safe_rerun()
 
 
 def render_card(item: Dict[str, Any], key_prefix: str) -> None:
