@@ -11,7 +11,9 @@ import streamlit as st
 
 API_URL = "https://pixabay.com/api/"
 DEFAULT_API_KEY = "49738243-e25f3b714305e2a1c2cd97721"
+PIXABAY_MAX_PAGE = 500  # Pixabay page depth limit (deep pagination is capped)
 
+# UI options (Pixabay-supported values)
 CATEGORIES = [
     "all",
     "backgrounds",
@@ -116,6 +118,10 @@ I18N: Dict[str, Dict[str, str]] = {
         "results_title": "Sonuçlar",
         "saved_prefix": "Kaydedildi",
         "back_top": "⬆ Üste Dön",
+        "demo_key_warning": "Demo API key kullanılıyor. Rate limit nedeniyle arama yavaşlayabilir veya geçici olarak çalışmayabilir.",
+        "demo_key_help": "Kendi API key'inizi `PIXABAY_KEY` olarak secrets/env üzerinden eklemeniz önerilir.",
+        "download_prepare": "İndirmeyi Hazırla",
+        "download_prepare_spinner": "İndirme hazırlanıyor...",
     },
     "en": {
         "hero_title": "Pixabay Visual Search",
@@ -164,6 +170,10 @@ I18N: Dict[str, Dict[str, str]] = {
         "results_title": "Results",
         "saved_prefix": "Saved",
         "back_top": "⬆ Back to Top",
+        "demo_key_warning": "Demo API key is active. Searches may be slow or temporarily fail due to rate limits.",
+        "demo_key_help": "Use your own API key via `PIXABAY_KEY` in secrets/env for reliable usage.",
+        "download_prepare": "Prepare Download",
+        "download_prepare_spinner": "Preparing download...",
     },
 }
 
@@ -350,6 +360,9 @@ def inject_custom_css(theme_mode: str) -> None:
           color: __TEXT_PRIMARY__ !important;
           font-weight: 700 !important;
         }
+        [data-testid="stAlert"] {
+          border-color: __CARD_BORDER__ !important;
+        }
 
         [data-testid="stTextInput"] input,
         [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
@@ -498,6 +511,7 @@ def safe_rerun() -> None:
 
 
 def get_pixabay_api_key() -> str:
+    """Return Pixabay API key from env/secrets or demo fallback."""
     env_key = os.getenv("PIXABAY_KEY", "").strip()
     if env_key:
         return env_key
@@ -510,6 +524,23 @@ def get_pixabay_api_key() -> str:
         pass
 
     return DEFAULT_API_KEY
+
+
+def is_demo_key_in_use() -> bool:
+    """Return True when env/secrets key is missing and demo fallback is active."""
+    if os.getenv("PIXABAY_KEY", "").strip():
+        return False
+    try:
+        return not bool(str(st.secrets["PIXABAY_KEY"]).strip())
+    except Exception:
+        return True
+
+
+def render_demo_key_warning() -> None:
+    """Show a warning when the bundled demo key is being used."""
+    if not is_demo_key_in_use():
+        return
+    st.warning(f"{t('demo_key_warning')} {t('demo_key_help')}")
 
 
 def init_state() -> None:
@@ -530,6 +561,7 @@ def init_state() -> None:
         "page": 1,
         "_clear_search_input": False,
         "_request_reset": False,
+        "_prepared_downloads": {},
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -550,6 +582,7 @@ def reset_all() -> None:
     set_page(1)
     st.session_state.search_active = False
     st.session_state._clear_search_input = True
+    st.session_state._prepared_downloads = {}
     reset_filters()
 
 
@@ -560,10 +593,16 @@ def toggle_theme() -> None:
 
 
 def set_page(page: int) -> None:
-    st.session_state.page = int(page)
+    try:
+        normalized = int(page)
+    except (TypeError, ValueError):
+        normalized = 1
+    st.session_state.page = max(1, min(normalized, PIXABAY_MAX_PAGE))
+    st.session_state._prepared_downloads = {}
 
 
 def slugify_tags(tags: str) -> str:
+    """Convert Pixabay tags into a safe filename slug."""
     raw = tags.split(",")[0].strip().lower() if tags else "image"
     slug = re.sub(r"[^a-z0-9]+", "-", raw).strip("-")
     return slug or "image"
@@ -594,14 +633,28 @@ def build_params(
     page: int,
     per_page: int,
 ) -> Dict[str, Any]:
+    """Build validated Pixabay API query parameters."""
+    try:
+        safe_page_input = int(page)
+    except (TypeError, ValueError):
+        safe_page_input = 1
+    safe_page = max(1, min(safe_page_input, PIXABAY_MAX_PAGE))
+
+    try:
+        safe_per_page = int(per_page)
+    except (TypeError, ValueError):
+        safe_per_page = PER_PAGE_OPTIONS[0]
+    if safe_per_page not in PER_PAGE_OPTIONS:
+        safe_per_page = PER_PAGE_OPTIONS[0]
+
     params: Dict[str, Any] = {
         "key": get_pixabay_api_key(),
         "q": query,
         "lang": lang,
         "image_type": image_type,
         "safesearch": str(safesearch).lower(),
-        "page": page,
-        "per_page": per_page,
+        "page": safe_page,
+        "per_page": safe_per_page,
     }
 
     if category != "all":
@@ -626,6 +679,7 @@ def search_pixabay(
     page: int,
     per_page: int,
 ) -> Dict[str, Any]:
+    """Fetch image search results from Pixabay API."""
     params = build_params(
         query=query,
         lang=lang,
@@ -672,6 +726,27 @@ def fetch_image_bytes(image_url: str) -> bytes:
     except requests.RequestException as exc:
         raise RuntimeError(f"Görsel indirilemedi: {exc}") from exc
     return response.content
+
+
+def render_api_error(error: RuntimeError) -> None:
+    """Show API error with quick troubleshooting suggestions."""
+    st.error(str(error))
+    if current_lang() == "en":
+        st.markdown(
+            "**Suggested fixes**\n"
+            "- Is `PIXABAY_KEY` correct?\n"
+            "- You may have hit rate limit (especially with demo key).\n"
+            "- Try fewer/looser filters.\n"
+            "- Check internet connection / Streamlit Cloud logs."
+        )
+    else:
+        st.markdown(
+            "**Çözüm önerisi**\n"
+            "- `PIXABAY_KEY` doğru mu kontrol edin.\n"
+            "- Rate limit dolmuş olabilir (özellikle demo key ile).\n"
+            "- Filtreleri azaltıp tekrar deneyin.\n"
+            "- İnternet bağlantısını / Streamlit Cloud loglarını kontrol edin."
+        )
 
 
 def save_image_locally(image_url: str, image_id: int, tags: str) -> Path:
@@ -744,6 +819,7 @@ def run_search(reset_page: bool) -> None:
 
     st.session_state.search_query = query
     st.session_state.search_active = True
+    st.session_state._prepared_downloads = {}
     if reset_page:
         set_page(1)
 
@@ -857,7 +933,10 @@ def render_summary(total_hits: int, hits: List[Dict[str, Any]]) -> None:
 
 
 def render_pagination(total_hits: int, key_prefix: str) -> None:
-    total_pages = max(1, min(math.ceil(total_hits / st.session_state.per_page), 500))
+    # Pixabay deep pagination is effectively limited; cap UI to avoid invalid pages.
+    total_pages = max(
+        1, min(math.ceil(total_hits / st.session_state.per_page), PIXABAY_MAX_PAGE)
+    )
 
     p1, p2, p3 = st.columns([1, 1.2, 1])
     with p1:
@@ -872,6 +951,7 @@ def render_pagination(total_hits: int, key_prefix: str) -> None:
             max_value=total_pages,
             value=int(st.session_state.page),
             step=1,
+            key=f"{key_prefix}_page_input",
             label_visibility="collapsed",
         )
         if int(selected_page) != st.session_state.page:
@@ -944,19 +1024,45 @@ def render_card(item: Dict[str, Any], key_prefix: str) -> None:
 
         with a2:
             if image_url:
-                try:
-                    image_bytes = fetch_image_bytes(image_url)
-                    st.download_button(
+                prepared_downloads = st.session_state.setdefault(
+                    "_prepared_downloads", {}
+                )
+                download_key = str(image_id)
+                prepared = prepared_downloads.get(download_key)
+                if prepared and prepared.get("image_url") != image_url:
+                    prepared_downloads.pop(download_key, None)
+                    prepared = None
+
+                slot = st.empty()
+                if not prepared:
+                    if slot.button(
+                        t("download_prepare"),
+                        key=f"{key_prefix}_prepare_{image_id}",
+                        use_container_width=True,
+                    ):
+                        try:
+                            with st.spinner(t("download_prepare_spinner")):
+                                image_bytes = fetch_image_bytes(str(image_url))
+                            prepared = {
+                                "image_url": str(image_url),
+                                "bytes": image_bytes,
+                                "file_name": filename_for_item(
+                                    image_id=image_id, tags=tags
+                                ),
+                            }
+                            prepared_downloads[download_key] = prepared
+                        except RuntimeError as exc:
+                            st.caption(str(exc))
+
+                if prepared:
+                    slot.download_button(
                         t("save_device"),
-                        data=image_bytes,
-                        file_name=filename_for_item(image_id=image_id, tags=tags),
+                        data=prepared["bytes"],
+                        file_name=prepared["file_name"],
                         mime="image/jpeg",
                         key=f"{key_prefix}_download_{image_id}",
                         use_container_width=True,
                     )
-                except RuntimeError as exc:
-                    st.button(t("save_device"), disabled=True, use_container_width=True)
-                    st.caption(str(exc))
             else:
                 st.button(t("save_device"), disabled=True, use_container_width=True)
 
@@ -985,6 +1091,7 @@ def main() -> None:
     st.markdown("<a id='top'></a>", unsafe_allow_html=True)
     render_top_controls()
     render_hero()
+    render_demo_key_warning()
     render_search_section()
 
     if not st.session_state.search_active:
@@ -1005,7 +1112,7 @@ def main() -> None:
                 per_page=st.session_state.per_page,
             )
         except RuntimeError as exc:
-            st.error(str(exc))
+            render_api_error(exc)
             render_showcase()
             return
 
@@ -1017,12 +1124,14 @@ def main() -> None:
         render_showcase()
         return
 
-    render_results(hits)
-    st.markdown("---")
     st.markdown(
         f"<div class='section-title'>{t('results_title')}</div>", unsafe_allow_html=True
     )
     render_summary(total_hits=total_hits, hits=hits)
+    render_pagination(total_hits, key_prefix="top")
+    st.markdown("---")
+    render_results(hits)
+    st.markdown("---")
     render_pagination(total_hits, key_prefix="bottom")
     st.markdown(
         f"<a class='scroll-top-link' href='#top'>{t('back_top')}</a>",
